@@ -60,6 +60,7 @@ function Speech(texts, options) {
     else {
       if (isGoogleTranslate(options.voice)) return new CharBreaker(200, punctuator).breakText(text);
       else if (isPiperVoice(options.voice) || isSupertonicVoice(options.voice) || isNghiTtsVoice(options.voice)) return [text];
+      else if (isOpenai(options.voice) && /^ja/.test(options.lang)) return new SentenceBreaker(750, punctuator).breakText(text);
       else return new CharBreaker(750, punctuator, 200).breakText(text);
     }
   }
@@ -397,6 +398,33 @@ function Speech(texts, options) {
         }
       });
       flush();
+      return result;
+    }
+  }
+
+  //one sentence per chunk, so that highlighting moves sentence by sentence
+  //sentences longer than charLimit are broken the same way as CharBreaker
+  function SentenceBreaker(charLimit, punctuator) {
+    var charBreaker = new CharBreaker(charLimit, punctuator);
+    //closing brackets and spaces after the end of a sentence belong to that sentence
+    var sentenceTail = /^[\s\u300d\u300f\uff09\u3011\u3015\u3009\u300b\uff3d\uff5d\u201d\u2019"')\]]+/;
+    this.breakText = function(text) {
+      var result = [];
+      punctuator.getParagraphs(text).forEach(function(paragraph) {
+        punctuator.getSentences(paragraph).forEach(function(part) {
+          //EastAsianPunctuator does not end a sentence at the fullwidth question mark
+          (part.match(/[^\uff1f]*\uff1f+|[^\uff1f]+/g) || []).forEach(function(sentence) {
+            var tail = result.length && sentenceTail.exec(sentence);
+            if (tail) {
+              result[result.length-1] += tail[0];
+              sentence = sentence.slice(tail[0].length);
+            }
+            if (!sentence.trim()) return;
+            if (sentence.length > charLimit) result.push.apply(result, charBreaker.breakText(sentence));
+            else result.push(sentence);
+          });
+        });
+      });
       return result;
     }
   }
