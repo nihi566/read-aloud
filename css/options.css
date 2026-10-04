@@ -134,7 +134,7 @@ small {
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
-  font-weight: 550;
+  font-weight: 600;
   white-space: nowrap;
 }
 /* a select placed directly in the grid: keep the row look via a wrapper-like margin */
@@ -190,7 +190,10 @@ input {
   line-height: inherit;
 }
 input[type=checkbox] {
-  margin-top: .5rem;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  vertical-align: -2px;
   padding: 0;
   accent-color: var(--accent);
 }

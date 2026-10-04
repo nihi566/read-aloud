@@ -309,7 +309,7 @@
     $("#voices").empty()
     $("<option>")
       .val("")
-      .text("Auto select")
+      .text(brapi.i18n.getMessage("options_auto_select"))
       .appendTo("#voices")
 
     //get voices filtered by selected languages

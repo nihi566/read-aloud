@@ -222,5 +222,20 @@
   },
   "google_translate_keep_page_open": {
     "message": "Read Aloud is using Google Translate for text-to-speech.  Please keep this tab open."
+  },
+  "options_auto_select": {
+    "message": "Auto select"
+  },
+  "options_voice_note": {
+    "message": "Note: This voice may become unavailable at any time."
+  },
+  "options_read_more": {
+    "message": "Read more about it on our blog"
+  },
+  "advanced_heading": {
+    "message": "Advanced Options"
+  },
+  "advanced_fix_bt_silence_gap": {
+    "message": "Fix missing first few words of each paragraph when using Bluetooth headset"
   }
 }
