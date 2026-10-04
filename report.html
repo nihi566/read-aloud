@@ -41,7 +41,8 @@
       </div>
       <div class="form-group">
         <label for="txt-comment">どのような問題が起きましたか？</label>
-        <textarea id="txt-comment" class="form-control" rows="4" maxlength="1000" placeholder="例: 2 段落目から先が読み上げられない"></textarea>
+        <textarea id="txt-comment" class="form-control" rows="4" maxlength="1000" placeholder="例: 2 段落目から先が読み上げられない" aria-describedby="comment-error"></textarea>
+        <div id="comment-error" class="invalid-feedback">問題の内容を入力してください。</div>
         <small class="form-text text-muted">
           返信が必要な場合は、メールアドレスも書き添えてください。
         </small>

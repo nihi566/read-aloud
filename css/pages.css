@@ -26,6 +26,10 @@ body {
   --danger-bg: #fdecec;
   --danger-text: #9b2424;
   --focus: 0 0 0 3px rgba(240, 100, 58, .3);
+  /* text fields: a softer ring than buttons, so a focused field never reads as an error */
+  --field-focus-border: #f3a488;
+  --field-focus: 0 0 0 3px rgba(240, 100, 58, .12);
+  --code-bg: #f1f2f5;
 }
 body.dark-mode {
   --bg: #1b1e23;
@@ -46,6 +50,9 @@ body.dark-mode {
   --danger: #ff6b6b;
   --danger-bg: #3a2326;
   --danger-text: #ffb4b4;
+  --field-focus-border: #a8644d;
+  --field-focus: 0 0 0 3px rgba(255, 122, 77, .16);
+  --code-bg: #2c3139;
   color-scheme: dark;
 }
 
@@ -67,6 +74,15 @@ a, .link {
 a:hover, .link:hover {
   color: var(--accent-hover);
   text-decoration: underline;
+}
+
+/* a page opened inside the popup (?referer=popup.html, or navigated to from popup.html) must not widen it */
+body.in-popup {
+  width: 460px;
+  max-width: 100vw;
+}
+body.in-popup .container {
+  padding: 14px 16px 20px;
 }
 
 /* page frame */
@@ -210,8 +226,27 @@ label {
   outline: none;
   color: var(--text);
   background-color: var(--input-bg);
-  border-color: var(--accent);
-  box-shadow: var(--focus);
+  border-color: var(--field-focus-border);
+  box-shadow: var(--field-focus);
+}
+/* real errors only: red border + a message under the field (set by the page script) */
+.form-control.is-invalid, .form-control.is-invalid:focus {
+  padding-right: 12px;
+  background-image: none;
+  border-color: var(--danger-text);
+}
+.form-control.is-invalid:focus {
+  box-shadow: 0 0 0 3px var(--danger-bg);
+}
+.invalid-feedback {
+  display: none;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--danger-text);
+}
+.form-control.is-invalid ~ .invalid-feedback {
+  display: block;
 }
 .form-control::placeholder {
   color: var(--muted);
@@ -219,6 +254,15 @@ label {
 }
 textarea.form-control {
   resize: vertical;
+}
+code {
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .9em;
+  color: var(--text);
+  background-color: var(--code-bg);
+  border-radius: 5px;
+  overflow-wrap: anywhere;
 }
 textarea.code, .code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

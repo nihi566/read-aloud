@@ -8,6 +8,38 @@
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="css/common.css">
   <link rel="stylesheet" type="text/css" href="css/pages.css">
+  <style>
+  .section-title {
+    margin-top: 28px;
+  }
+  .shortcut-table td, .shortcut-table th {
+    word-break: keep-all;
+    line-break: strict;
+    overflow-wrap: anywhere;
+  }
+  .shortcut-table th:last-child, .shortcut-table td:last-child {
+    width: 46%;
+  }
+  .shortcut-table {
+    table-layout: fixed;
+  }
+  .shortcut-table .key-combo {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+  /* キーの読み方（ピリオド・カンマ）は、どの幅でもキーのすぐ下に */
+  .shortcut-table .key-note {
+    display: block;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+  @media (max-width: 400px) {
+    .shortcut-table th, .shortcut-table td {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+  }
+  </style>
   <script src="js/rxjs.umd.min.js"></script>
   <script src="js/defaults.js"></script>
 </head>
@@ -16,7 +48,7 @@
     <h2>ショートカットキー</h2>
     <p class="lead-text">どのページを開いていても、次のキーで読み上げを操作できます。Mac では <kbd>Alt</kbd> の代わりに <kbd>Option</kbd> を使います。</p>
     <div class="table-card">
-      <table class="table">
+      <table class="table shortcut-table">
         <tr>
           <th scope="col">操作</th>
           <th scope="col">キー</th>
@@ -31,11 +63,34 @@
         </tr>
         <tr>
           <td>次の文へ進む</td>
-          <td><span class="key-combo"><kbd>Alt</kbd>+<kbd>.</kbd><span class="key-note">（ピリオド）</span></span></td>
+          <td><span class="key-combo"><kbd>Alt</kbd>+<kbd>.</kbd></span><span class="key-note">（ピリオド）</span></td>
         </tr>
         <tr>
           <td>前の文へ戻る</td>
-          <td><span class="key-combo"><kbd>Alt</kbd>+<kbd>,</kbd><span class="key-note">（カンマ）</span></span></td>
+          <td><span class="key-combo"><kbd>Alt</kbd>+<kbd>,</kbd></span><span class="key-note">（カンマ）</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <h3 class="section-title">ポップアップのキー</h3>
+    <p class="lead-text">読み上げのポップアップを開いているあいだは、次のキーも使えます。</p>
+    <div class="table-card">
+      <table class="table shortcut-table">
+        <tr>
+          <th scope="col">操作</th>
+          <th scope="col">キー</th>
+        </tr>
+        <tr>
+          <td>再生／一時停止</td>
+          <td><span class="key-combo"><kbd>Space</kbd></span></td>
+        </tr>
+        <tr>
+          <td>前の文／次の文</td>
+          <td><span class="key-combo"><kbd aria-label="左矢印">←</kbd><kbd aria-label="右矢印">→</kbd></span></td>
+        </tr>
+        <tr>
+          <td>速く／遅く</td>
+          <td><span class="key-combo"><kbd aria-label="上矢印">↑</kbd><kbd aria-label="下矢印">↓</kbd></span></td>
         </tr>
       </table>
     </div>

@@ -25,6 +25,21 @@
     font-size: 14px;
     overflow-wrap: anywhere;
   }
+  .openai .hint {
+    margin: 0 0 12px;
+    font-size: 13.5px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .alert .error-detail {
+    margin-top: 4px;
+    font-size: 12px;
+    opacity: .8;
+    overflow-wrap: anywhere;
+  }
+  .alert .error-detail:empty {
+    display: none;
+  }
   </style>
 
   <script src="js/rxjs.umd.min.js"></script>
@@ -41,6 +56,67 @@
     <p class="lead-text">各サービスの認証情報を入力して保存すると、その声が声の一覧に追加されます。入力欄を空にして保存すると無効になります。</p>
 
     <div class="row">
+      <div class="col-12">
+        <div class="card border-primary openai">
+          <div class="card-header">
+            OpenAI／OpenAI 互換
+            <div class="subtext">OpenAI、または OpenAI 互換の音声合成 API（Speech エンドポイント）を使います。このパソコンの音声サーバーもここで設定します。</div>
+          </div>
+          <div class="card-body view-new">
+            <p class="hint">何も登録していないときは、このパソコンの音声サーバー（<code class="url">http://127.0.0.1:5123/v1</code>）を自動で使います。別のサーバーや OpenAI を使うときだけ追加してください。</p>
+            <div class="form-group">
+              <button type="button" class="btn btn-outline-primary btn-add">追加</button>
+            </div>
+          </div>
+          <div class="card-body view-exist">
+            <div class="form-group">
+              <div class="field-label">API URL</div>
+              <div class="endpoint-url"></div>
+            </div>
+            <div class="form-group">
+              <div class="field-label">API key</div>
+              <div class="api-key"></div>
+            </div>
+            <div class="form-group">
+              <div class="field-label">声の一覧（Voice List）</div>
+              <div class="voice-list"></div>
+            </div>
+            <div class="form-group buttons">
+              <button type="button" class="btn btn-outline-primary btn-edit">編集</button>
+              <button type="button" class="btn btn-outline-danger btn-delete">削除</button>
+            </div>
+          </div>
+          <div class="card-body view-edit">
+            <form>
+              <div class="form-group">
+                <label for="openai-url">API URL</label>
+                <input type="text" id="openai-url" class="form-control txt-endpoint-url" placeholder="http://127.0.0.1:5123/v1">
+              </div>
+              <div class="form-group">
+                <label for="openai-key">API key（必要な場合のみ）</label>
+                <input type="password" id="openai-key" class="form-control txt-api-key" placeholder="sk-…">
+              </div>
+              <div class="form-group">
+                <label for="openai-voices">声の一覧（Voice List、JSON 形式）</label>
+                <textarea id="openai-voices" class="form-control code txt-voice-list" rows="7" spellcheck="false" placeholder='[
+  {"voice": "alloy", "langs": ["ja-JP", "en-US"], "model": "tts-1"},
+  {"voice": "sbv2-amitaro", "lang": "ja-JP"}
+]'></textarea>
+                <small class="form-text text-muted">声ごとに <code>voice</code>（声の ID）と、<code>lang</code>（例: <code>ja-JP</code>）または <code>langs</code>（言語の配列）を書きます。<code>model</code> は任意です。このパソコンの音声サーバーなら、空欄でもサーバーから自動で読み込みます。</small>
+              </div>
+              <div class="form-group status-group">
+                <div class="status error alert alert-danger"></div>
+              </div>
+              <div class="form-group buttons">
+                <button type="button" class="btn btn-primary btn-save">保存</button>
+                <button type="button" class="btn btn-light btn-cancel">キャンセル</button>
+                <div class="status progress spinner" role="status" aria-label="確認中"></div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <div class="col-lg-6">
         <div class="card border-primary">
           <div class="card-header">
@@ -157,61 +233,6 @@
         </div>
       </div>
 
-      <div class="col-lg-6">
-        <div class="card border-primary openai">
-          <div class="card-header card-header-dark">
-            OpenAI
-            <div class="subtext">OpenAI、または OpenAI 互換の音声合成 API（Speech エンドポイント）を使います。</div>
-          </div>
-          <div class="card-body view-new">
-            <div class="form-group">
-              <button type="button" class="btn btn-outline-primary btn-add">追加</button>
-            </div>
-          </div>
-          <div class="card-body view-exist">
-            <div class="form-group">
-              <div class="field-label">API URL</div>
-              <div class="endpoint-url"></div>
-            </div>
-            <div class="form-group">
-              <div class="field-label">API key</div>
-              <div class="api-key"></div>
-            </div>
-            <div class="form-group">
-              <div class="field-label">声の一覧（Voice List）</div>
-              <div class="voice-list"></div>
-            </div>
-            <div class="form-group buttons">
-              <button type="button" class="btn btn-outline-primary btn-edit">編集</button>
-              <button type="button" class="btn btn-outline-danger btn-delete">削除</button>
-            </div>
-          </div>
-          <div class="card-body view-edit">
-            <form>
-              <div class="form-group">
-                <label for="openai-url">API URL</label>
-                <input type="text" id="openai-url" class="form-control txt-endpoint-url">
-              </div>
-              <div class="form-group">
-                <label for="openai-key">API key（必要な場合のみ）</label>
-                <input type="password" id="openai-key" class="form-control txt-api-key">
-              </div>
-              <div class="form-group">
-                <label for="openai-voices">声の一覧（Voice List、JSON 形式）</label>
-                <textarea id="openai-voices" class="form-control code txt-voice-list" rows="6"></textarea>
-              </div>
-              <div class="form-group status-group">
-                <div class="status error alert alert-danger"></div>
-              </div>
-              <div class="form-group buttons">
-                <button type="button" class="btn btn-primary btn-save">保存</button>
-                <button type="button" class="btn btn-light btn-cancel">キャンセル</button>
-                <div class="status progress spinner" role="status" aria-label="確認中"></div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
     </div>
 
   </div>

@@ -29,6 +29,12 @@
       #state-pairing li + li {
         margin-top: 4px;
       }
+      .loading-text {
+        margin: 0;
+        text-align: center;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
       .nowrap {
         white-space: nowrap;
       }
@@ -92,13 +98,14 @@
       <div class="card">
         <div id="state-loading">
           <div class="spinner" role="status" aria-label="準備中"></div>
+          <p class="loading-text">ペアリングコードを準備しています…</p>
         </div>
         <div id="state-pairing">
           <ol>
             <li>スマートフォンのブラウザーで <span class="nowrap">https://<span id="pairing-domain">readaloud.link</span></span> を開きます。</li>
             <li>次のペアリングコードを入力します。</li>
           </ol>
-          <span id="pairing-code"></span>
+          <span id="pairing-code" aria-live="polite"></span>
         </div>
         <div id="state-success">
           <div class="state-message">

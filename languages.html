@@ -39,12 +39,56 @@
     flex: none;
     margin: 4px 0 0;
   }
-  #lang-list > .form-check:not(.voice-list) > .form-check-label:hover {
+  #lang-list .lang-row > .form-check-label:hover {
     background-color: var(--surface);
   }
-  #lang-list > .form-check:not(.voice-list) + .form-check:not(.voice-list) > .form-check-label,
-  #lang-list > .voice-list + .form-check > .form-check-label {
+  #lang-list .lang-item.filtered-out {
+    display: none;
+  }
+  #lang-list .lang-item:not(.filtered-out) ~ .lang-item:not(.filtered-out) {
     border-top: 1px solid var(--border);
+  }
+  .lang-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 10px;
+    min-width: 0;
+  }
+  .lang-ja {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+  .lang-native {
+    font-size: 12.5px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .lang-filter {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin: 12px -4px 0;
+    padding: 8px 4px;
+    background-color: var(--bg);
+  }
+  .lang-filter .form-control {
+    padding-left: 38px;
+  }
+  .lang-filter .material-icons {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .lang-filter + #lang-list {
+    margin-top: 4px;
+  }
+  #lang-empty {
+    margin-top: 12px;
   }
   .voice-list {
     margin: 2px 18px 10px 44px !important;
@@ -82,7 +126,12 @@
   <div class="container">
     <h2 data-i18n="languages_heading"></h2>
     <p class="lead-text">読み上げに使う言語にチェックを入れてください。チェックした言語ごとに、使う声を選べます。</p>
-    <form>
+    <form onsubmit="return false">
+      <div class="lang-filter">
+        <i class="material-icons" aria-hidden="true">search</i>
+        <input type="search" id="lang-filter" class="form-control" autocomplete="off" placeholder="言語を検索（日本語名・現地の名前・コード）" aria-label="言語を検索">
+      </div>
+      <p id="lang-empty" class="lead-text" hidden>一致する言語がありません。</p>
       <div class="form-group" id="lang-list">
       </div>
     </form>
