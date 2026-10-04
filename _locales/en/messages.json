@@ -1,9 +1,9 @@
 {
   "extension_name": {
-    "message": "Read Aloud: A Text to Speech Voice Reader"
+    "message": "[Fork] Read Aloud: A Text to Speech Voice Reader"
   },
   "extension_short_name": {
-    "message": "Read Aloud"
+    "message": "Read Aloud (Fork)"
   },
   "extension_description": {
     "message": "Read aloud the current web-page article with one click, using text to speech (TTS). Supports 40+ languages."

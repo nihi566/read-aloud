@@ -5,6 +5,7 @@
   "short_name": "__MSG_extension_short_name__",
   "description": "__MSG_extension_description__",
   "version": "2.23.0",
+  "version_name": "2.23.0 改造版（日本語を 1 文ずつ）",
   "default_locale": "en",
   "minimum_chrome_version": "99",
 
