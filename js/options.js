@@ -15,7 +15,12 @@
   domReadyPromise
     .then(setI18nText)
   domReadyPromise
-    .then(() => $("body").toggleClass("in-popup", queryString.referer == "popup.html"))
+    .then(() => {
+      const inPopup = queryString.referer == "popup.html"
+      $("body").toggleClass("in-popup", inPopup)
+      //keep the popup's width when going on to the advanced options
+      if (inPopup) $("#expand-button").attr("href", "advanced-options.html?referer=popup.html")
+    })
 
 
 

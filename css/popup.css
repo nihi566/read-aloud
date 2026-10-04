@@ -423,6 +423,9 @@ body:not(.is-popup) #highlight-wrap {
 body:not(.is-popup) #highlight {
   flex: 1 1 auto;
   min-height: 0;
+  /* wide windows: keep lines at a readable length */
+  padding-left: max(16px, calc((100% - 38em) / 2));
+  padding-right: max(16px, calc((100% - 38em) / 2));
 }
 body:not(.is-popup) {
   overflow-y: auto;
@@ -438,8 +441,10 @@ body:not(.is-popup) {
 
 
 /* toolbar */
+/* three columns so the position stays centered */
 #toolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   margin-top: 8px;
 }
@@ -468,23 +473,57 @@ body:not(.is-popup) {
 #toolbar .material-icons {
   font-size: 18px;
 }
+.toolbar-start, .toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.toolbar-end {
+  justify-content: flex-end;
+}
 #keys-help {
-  align-self: center;
-  margin-left: 8px;
-  font-size: 18px;
-  color: var(--muted);
-  opacity: .7;
-  cursor: help;
+  position: relative;
+}
+#keys-help > .btn {
+  background-color: transparent;
+  border-radius: 50%;
+}
+#keys-pop {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 2;
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--bg);
+  background-color: var(--text);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity .15s, transform .15s;
+}
+#keys-help:hover #keys-pop, #keys-help:focus-within #keys-pop {
+  opacity: 1;
+  transform: translateY(0);
+}
+#keys-pop kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  margin-right: 4px;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 11px;
+  text-align: center;
+  color: var(--text);
+  background-color: var(--bg);
   border-radius: 4px;
 }
-#keys-help:hover, #keys-help:focus-visible {
-  opacity: 1;
-  outline: none;
-  box-shadow: var(--focus);
-}
 #progress {
-  margin: 0 auto;
-  align-self: center;
   font-size: 12px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;

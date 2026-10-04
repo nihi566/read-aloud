@@ -164,6 +164,26 @@ small {
   padding: 6px 12px;
 }
 
+/* narrow windows: label above its control */
+@media (max-width: 420px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .layout > * {
+    min-height: 0;
+  }
+  .layout > :nth-child(odd) {
+    padding: 10px 0 0;
+  }
+  .layout > :nth-child(even) {
+    padding: 4px 0 8px;
+  }
+  .layout > select.form-control {
+    margin: 4px 0 8px;
+    width: 100%;
+  }
+}
+
 .form-group {
   margin-top: 10px;
 }
@@ -503,12 +523,14 @@ input[type=checkbox] + label {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0 1rem;
   margin-bottom: .5rem;
 }
 
 #word-replacements-section h3 {
   margin: 0;
+  white-space: nowrap;
   font-size: 1.25rem;
 }
 

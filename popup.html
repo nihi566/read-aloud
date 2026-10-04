@@ -80,23 +80,36 @@
   </div>
 
   <div id="toolbar">
-    <div class="btn-group" title="文字の大きさ">
-      <button id="decrease-font-size" type="button" class="btn" aria-label="文字を小さく">
-        <i class="material-icons">text_decrease</i>
-      </button>
-      <button id="increase-font-size" type="button" class="btn" aria-label="文字を大きく">
-        <i class="material-icons">text_increase</i>
-      </button>
+    <div class="toolbar-start">
+      <div class="btn-group" title="文字の大きさ">
+        <button id="decrease-font-size" type="button" class="btn" aria-label="文字を小さく">
+          <i class="material-icons">text_decrease</i>
+        </button>
+        <button id="increase-font-size" type="button" class="btn" aria-label="文字を大きく">
+          <i class="material-icons">text_increase</i>
+        </button>
+      </div>
+      <div id="keys-help">
+        <button type="button" class="btn" aria-label="キー操作" aria-describedby="keys-pop">
+          <i class="material-icons">keyboard</i>
+        </button>
+        <div id="keys-pop" role="tooltip">
+          <div><kbd>Space</kbd>再生／一時停止</div>
+          <div><kbd>←</kbd><kbd>→</kbd>前の文／次の文</div>
+          <div><kbd>↑</kbd><kbd>↓</kbd>速く／遅く</div>
+        </div>
+      </div>
     </div>
-    <span id="keys-help" class="material-icons" tabindex="0" title="キー操作&#10;Space: 再生／一時停止&#10;← →: 前の文／次の文&#10;↑ ↓: 速く／遅く" aria-label="キー操作: Space 再生と一時停止、左右キー 前の文と次の文、上下キー 速さ">keyboard</span>
     <span id="progress" aria-live="off"></span>
-    <div class="btn-group window-size" title="表示の大きさ">
-      <button id="decrease-window-size" type="button" class="btn" aria-label="ウィンドウを小さく">
-        <i class="material-icons">close_fullscreen</i>
-      </button>
-      <button id="increase-window-size" type="button" class="btn" aria-label="ウィンドウを大きく">
-        <i class="material-icons">open_in_full</i>
-      </button>
+    <div class="toolbar-end">
+      <div class="btn-group window-size" title="表示の大きさ">
+        <button id="decrease-window-size" type="button" class="btn" aria-label="ウィンドウを小さく">
+          <i class="material-icons">close_fullscreen</i>
+        </button>
+        <button id="increase-window-size" type="button" class="btn" aria-label="ウィンドウを大きく">
+          <i class="material-icons">open_in_full</i>
+        </button>
+      </div>
     </div>
   </div>
 

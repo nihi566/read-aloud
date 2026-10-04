@@ -1,6 +1,7 @@
 
 Promise.all([getSettings(), domReady()]).then(([settings]) => {
   setI18nText()
+  $("body").toggleClass("in-popup", getQueryString().referer == "popup.html")
 
   $("button.close")
     .show()
