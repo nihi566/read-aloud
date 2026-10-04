@@ -163,7 +163,7 @@ function Speech(texts, options) {
     )
   )
   .subscribe({
-    next(event) {
+    next: event => {
       isLoadingSubject.next(event.type == "load")
       switch (event.type) {
         case "start":
@@ -173,7 +173,9 @@ function Speech(texts, options) {
               sentenceStartIndicies: event.sentenceStartIndicies,
               index: 0
             }
+            if (this.onChunkStart) this.onChunkStart(enginePlaybackState.texts[0])
           } else {
+            if (this.onChunkStart) this.onChunkStart(texts[playlist.getIndex()])
             const nextText = texts[playlist.getIndex() + 1]
             if (nextText && engine.prefetch != null) engine.prefetch(nextText, options)
           }
@@ -181,6 +183,7 @@ function Speech(texts, options) {
         case "sentence":
           if (enginePlaybackState) {
             enginePlaybackState.index = enginePlaybackState.sentenceStartIndicies.indexOf(event.startIndex)
+            if (this.onChunkStart) this.onChunkStart(enginePlaybackState.texts[enginePlaybackState.index])
           }
           break
         case "end":

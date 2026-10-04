@@ -65,6 +65,9 @@
   "options_highlighting_window": {
     "message": "別ウィンドウで表示"
   },
+  "options_highlighting_page": {
+    "message": "ページ上に表示"
+  },
   "options_audio_playback": {
     "message": "オーディオ再生"
   },
