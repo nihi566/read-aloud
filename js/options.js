@@ -14,6 +14,13 @@
   //i18n
   domReadyPromise
     .then(setI18nText)
+  domReadyPromise
+    .then(() => {
+      const inPopup = queryString.referer == "popup.html"
+      $("body").toggleClass("in-popup", inPopup)
+      //keep the popup's width when going on to the advanced options
+      if (inPopup) $("#expand-button").attr("href", "advanced-options.html?referer=popup.html")
+    })
 
 
 
@@ -60,9 +67,14 @@
   //hotkey
   domReadyPromise
     .then(() => {
-      $("#hotkeys-link").click(function() {
-        brapi.tabs.create({url: getHotkeySettingsUrl()});
-      });
+      $("#hotkeys-link")
+        .attr({tabindex: 0, role: "link"})
+        .click(function() {
+          brapi.tabs.create({url: getHotkeySettingsUrl()});
+        })
+        .keydown(function(e) {
+          if (e.key == "Enter" || e.key == " ") $(this).click();
+        });
     })
 
 
@@ -116,6 +128,11 @@
   const rateSliderPromise = domReadyPromise
     .then(() => {
       const slider = createSlider($("#rate").get(0), {
+          label: brapi.i18n.getMessage("options_rate_label"),
+          format: value => {
+            const text = String(Number(Math.pow($("#rate").data("pow"), value).toFixed(2)))
+            return (text.includes(".") ? text : text + ".0") + "x"
+          },
           onChange(value) {
             const rate = Math.pow($("#rate").data("pow"), value)
             updateSetting("rate" + $("#voices").val(), Number(rate.toFixed(3)))
@@ -160,6 +177,8 @@
   const pitchSliderPromise = domReadyPromise
     .then(() => {
       return createSlider($("#pitch").get(0), {
+          label: brapi.i18n.getMessage("options_pitch_label"),
+          format: value => value.toFixed(2).replace(/0$/, ""),
           onChange(value) {
             updateSettings({pitch: value})
           }
@@ -175,6 +194,8 @@
   const volumeSliderPromise = domReadyPromise
     .then(() => {
       return createSlider($("#volume").get(0), {
+          label: brapi.i18n.getMessage("options_volume_label"),
+          format: value => Math.round(value * 100) + "%",
           onChange(value) {
             updateSettings({volume: value})
           }
@@ -309,7 +330,7 @@
     $("#voices").empty()
     $("<option>")
       .val("")
-      .text("Auto select")
+      .text(brapi.i18n.getMessage("options_auto_select"))
       .appendTo("#voices")
 
     //get voices filtered by selected languages
@@ -391,7 +412,7 @@
     groups.standard.forEach(function(voice) {
       $("<option>")
         .val(voice.voiceName)
-        .text(voice.voiceName)
+        .text(localVoiceLabel(voice.voiceName))
         .appendTo(standard);
     });
 
@@ -506,7 +527,7 @@
 
 
 
-  function createSlider(elem, {onChange, onSlideChange}) {
+  function createSlider(elem, {onChange, onSlideChange, label, format}) {
     var min = $(elem).data("min") || 0;
     var max = $(elem).data("max") || 1;
     var step = 1 / ($(elem).data("steps") || 20);
@@ -514,6 +535,24 @@
     var $bar = $("<div class='bar'>").appendTo(elem);
     var $track = $("<div class='track'>").appendTo(elem);
     var $knob = $("<div class='knob'>").appendTo($track);
+    var currentPos = 0;
+    var $value = format ? $("<span class='slider-value' aria-hidden='true'>").appendTo(elem) : $();
+
+    //改造版: the knob can be focused and moved with the arrow keys, and shows its value
+    $knob.attr({tabindex: 0, role: "slider", "aria-label": label || ""})
+      .on("keydown", function(e) {
+        var pos = {
+          ArrowLeft: currentPos - step, ArrowDown: currentPos - step,
+          ArrowRight: currentPos + step, ArrowUp: currentPos + step,
+          PageDown: currentPos - 5*step, PageUp: currentPos + 5*step,
+          Home: 0, End: 1,
+        }[e.key];
+        if (pos == null) return;
+        pos = Math.min(1, Math.max(0, step * Math.round(pos / step)));
+        setPosition(pos);
+        onChange(min + pos*(max-min));
+        return false;
+      })
 
     $bg.click(function(e) {
       var pos = calcPosition(e);
@@ -524,12 +563,14 @@
       return false;
     })
     $knob.on("mousedown touchstart", function() {
+      $knob.addClass("dragging");
       onSlideStart(function(e) {
         var pos = calcPosition(e);
         setPosition(pos);
         if (onSlideChange) onSlideChange(min + pos*(max-min));
       },
       function(e) {
+        $knob.removeClass("dragging");
         var pos = calcPosition(e);
         setPosition(pos);
         onChange(min + pos*(max-min));
@@ -543,9 +584,15 @@
     }
 
     function setPosition(pos) {
+      currentPos = pos;
       var percent = (100 * pos) + "%";
       $knob.css("left", percent);
       $bar.css("width", percent);
+      if (format) {
+        var text = format(min + pos*(max-min));
+        $knob.attr("aria-valuetext", text);
+        $value.text(text);
+      }
     }
     function calcPosition(e) {
       var rect = $track.get(0).getBoundingClientRect();

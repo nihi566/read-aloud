@@ -188,9 +188,6 @@ rxjs.combineLatest(
     brapi.i18n.getAcceptLanguages().catch(err => {console.error(err); return []}),
   ])
 
-  //create checkboxes
-  createCheckboxes(voices);
-
   //toggle check state
   var selectedLangs = immediate(() => {
     if (settings.languages) return settings.languages.split(',')
@@ -199,6 +196,11 @@ rxjs.combineLatest(
     const langs = Object.keys(groupVoicesByLang(voices)).filter(x => accept.has(x))
     return langs.length ? langs : []
   })
+
+  //create checkboxes（チェックした言語と日本語を上に）
+  createCheckboxes(voices, selectedLangs);
+  applyLangFilter();
+
   var isSelected = function() {
     return selectedLangs.includes($(this).data("lang"));
   };
@@ -221,34 +223,79 @@ rxjs.combineLatest(
   })
 })
 
-function createCheckboxes(voices) {
+// 言語名は日本語で（Intl.DisplayNames）。元の言語での名前は、小さく添える
+var jaLangNames = immediate(() => {
+  try {
+    return new Intl.DisplayNames(['ja'], {type: 'language'})
+  }
+  catch (err) {
+    console.error(err)
+    return null
+  }
+})
+
+function japaneseLangName(item) {
+  try {
+    const name = jaLangNames && jaLangNames.of(item.code)
+    if (name && name != item.code) return name
+  }
+  catch (err) {
+    console.error(err)
+  }
+  return item.name
+}
+
+function createCheckboxes(voices, selectedLangs) {
   $("#lang-list").empty()
 
   const voicesForLang = groupVoicesByLang(voices)
-  for (var item of langList) {
-    if (!voicesForLang[item.code]) continue;
+  const collator = new Intl.Collator('ja')
+  const rank = item => item.code == "ja" ? 0 : (selectedLangs || []).includes(item.code) ? 1 : 2
+  const items = langList
+    .filter(item => voicesForLang[item.code])
+    .map(item => Object.assign({jaName: japaneseLangName(item)}, item))
+    .sort((a, b) => rank(a) - rank(b) || collator.compare(a.jaName, b.jaName))
 
-    var div = $("<div>").addClass("form-check").appendTo("#lang-list");
+  for (var item of items) {
+    var group = $("<div>").addClass("lang-item")
+      .attr("data-lang", item.code)
+      .attr("data-search", [item.jaName, item.name, item.code].join("\n").toLowerCase())
+      .appendTo("#lang-list");
+    var div = $("<div>").addClass("form-check lang-row").appendTo(group);
     var label = $("<label>").addClass("form-check-label").appendTo(div);
     $("<input>").attr("type", "checkbox").addClass("form-check-input").attr("data-lang", item.code).appendTo(label);
-    $("<span>").text(item.name).appendTo(label);
+    var names = $("<span>").addClass("lang-name").attr("lang", "ja").appendTo(label);
+    $("<span>").addClass("lang-ja").text(item.jaName).appendTo(names);
+    if (item.name != item.jaName) $("<span>").addClass("lang-native").attr("lang", item.code).text(item.name).appendTo(names);
 
-    div = $("<div>").addClass("form-check voice-list").attr("data-lang", item.code).appendTo("#lang-list");
+    div = $("<div>").addClass("form-check voice-list").attr("data-lang", item.code).appendTo(group);
     label = $("<label>").addClass("form-check-label d-block").appendTo(div);
     $("<input>").attr("type", "radio").attr("name", item.code).appendTo(label);
-    $("<span>").text("Auto select").appendTo(label);
-    for (var voice of voicesForLang[item.code]) {
+    $("<span>").text("自動で選ぶ").appendTo(label);
+    for (var voice of (voicesForLang[item.code] || []).concat(voicesForLang["<any>"] || [])) {
       label = $("<label>").addClass("form-check-label d-block").appendTo(div);
       $("<input>").attr("type", "radio").attr("name", item.code).attr("data-voice", voice.voiceName).appendTo(label);
-      $("<span>").text(voice.voiceName).appendTo(label);
-    }
-    for (var voice of voicesForLang["<any>"] || []) {
-      label = $("<label>").addClass("form-check-label d-block").appendTo(div);
-      $("<input>").attr("type", "radio").attr("name", item.code).attr("data-voice", voice.voiceName).appendTo(label);
-      $("<span>").text(voice.voiceName).appendTo(label);
+      var voiceLabel = localVoiceLabel(voice.voiceName);
+      $("<span>").text(voiceLabel).attr("title", voiceLabel != voice.voiceName ? voice.voiceName : null).appendTo(label);
     }
   }
 }
+
+// 検索欄: 日本語名・元の言語での名前・コードで絞り込む
+function applyLangFilter() {
+  const query = ($("#lang-filter").val() || "").trim().toLowerCase()
+  let shown = 0
+  $("#lang-list .lang-item").each(function() {
+    const match = !query || this.getAttribute("data-search").indexOf(query) != -1
+    $(this).toggleClass("filtered-out", !match)
+    if (match) shown++
+  })
+  $("#lang-empty").prop("hidden", shown > 0 || !$("#lang-list .lang-item").length)
+}
+
+domReady().then(() => {
+  $("#lang-filter").on("input", applyLangFilter)
+})
 
 function saveLanguages() {
   updateSettings({

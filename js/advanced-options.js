@@ -1,6 +1,7 @@
 
 Promise.all([getSettings(), domReady()]).then(([settings]) => {
   setI18nText()
+  $("body").toggleClass("in-popup", getQueryString().referer == "popup.html")
 
   $("button.close")
     .show()
@@ -40,19 +41,23 @@ Promise.all([getSettings(), domReady()]).then(([settings]) => {
     }))
   }
 
+  function savedStatusKey(text) {
+    return parseWordReplacements(text).errors.length ? "advanced_word_replacements_saved_with_errors" : "advanced_word_replacements_saved"
+  }
+
   function saveWordReplacements() {
     clearTimeout(saveTimer)
     showWordReplacementErrors()
     const text = wordReplacements.val()
     if (text == savedText) {
-      showSaveStatus("advanced_word_replacements_saved", true)
+      showSaveStatus(savedStatusKey(text), true)
       return
     }
     showSaveStatus("advanced_word_replacements_saving")
     updateSettings({wordReplacements: text})
       .then(() => {
         savedText = text
-        if (wordReplacements.val() == text) showSaveStatus("advanced_word_replacements_saved", true)
+        if (wordReplacements.val() == text) showSaveStatus(savedStatusKey(text), true)
       })
       .catch(err => {
         console.error(err)

@@ -119,3 +119,13 @@ test("読み込み待ち: サーバーが応答しない・sbv2 の情報が無�
   assert.equal(await load(() => ({ ok: false, status: 500 })).ctx.isLocalVoiceLoading(null, "OpenAI sbv2-amitaro"), false);
   assert.equal(await load(() => ok({ status: "ok", sbv2: null })).ctx.isLocalVoiceLoading(null, "OpenAI sbv2-amitaro"), false);
 });
+
+test("このパソコンのサーバーの声は、ID ではなく分かりやすい名前で見せる", () => {
+  const { ctx } = load(async () => { throw new Error("not called"); });
+  assert.equal(ctx.localVoiceLabel("OpenAI sbv2-amitaro"), "あみたろ");
+  assert.equal(ctx.localVoiceLabel("OpenAI piper-male"), "Piper 男性");
+  // 知らない声はそのまま
+  assert.equal(ctx.localVoiceLabel("OpenAI alloy"), "OpenAI alloy");
+  assert.equal(ctx.localVoiceLabel("Google 日本語"), "Google 日本語");
+  assert.equal(ctx.localVoiceLabel(undefined), undefined);
+});

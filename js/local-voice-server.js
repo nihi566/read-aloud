@@ -70,3 +70,15 @@ function openaiVoiceInfo(openaiCreds, voiceId) {
   if (isLocalVoiceServer(openaiCreds.url)) return {voice: voiceId}
   return undefined
 }
+
+// 声の表示名: このパソコンのサーバーの声は、ID（OpenAI sbv2-amitaro など）ではなく分かりやすい名前で見せる
+const LOCAL_VOICE_LABELS = {
+  "sbv2-amitaro": "あみたろ",
+  "sbv2-koharune-ami": "小春音アミ",
+  "piper-female": "Piper 女性",
+  "piper-male": "Piper 男性",
+}
+
+function localVoiceLabel(voiceName) {
+  return LOCAL_VOICE_LABELS[(voiceName || "").replace(/^OpenAI /, "")] || voiceName
+}

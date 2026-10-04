@@ -9,82 +9,82 @@
     "message": "ワンクリックで現在のウェブページの記事を読み上げます。 40以上の言語をサポートします。"
   },
   "options_heading": {
-    "message": "オプション"
+    "message": "設定"
   },
   "options_voice_label": {
-    "message": "音声"
+    "message": "声"
   },
   "options_voicegroup_offline": {
     "message": "オフラインの声"
   },
   "options_voicegroup_standard": {
-    "message": "標準音声"
+    "message": "標準の声"
   },
   "options_voicegroup_premium": {
-    "message": "プレミアム音声"
+    "message": "プレミアムの声"
   },
   "options_voicegroup_experimental": {
-    "message": "実験的なAI音声"
+    "message": "実験的な AI の声"
   },
   "options_voicegroup_additional": {
-    "message": "追加の音声"
+    "message": "声を追加"
   },
   "options_add_more_languages": {
-    "message": "言語を追加する"
+    "message": "➕ 言語を追加…"
   },
   "options_enable_custom_voices": {
-    "message": "カスタム音声を有効にする"
+    "message": "🧩 カスタムの声を有効にする…"
   },
   "options_enable_piper_voices": {
-    "message": "Piper音声をインストール..."
+    "message": "⚡ Piper の声をインストール…"
   },
   "options_enable_supertonic_voices": {
-    "message": "Supertonic音声をインストール..."
+    "message": "⚡ Supertonic の声をインストール…"
   },
   "options_rate_label": {
-    "message": "スピード"
+    "message": "速さ"
   },
   "options_rate_warning": {
-    "message": "注：一部の音声は高速では動作しない場合があります。"
+    "message": "注意: 声によっては、速くすると読み上げられないことがあります。"
   },
   "options_pitch_label": {
-    "message": "ピッチ"
+    "message": "声の高さ"
   },
   "options_volume_label": {
-    "message": "ボリューム"
+    "message": "音量"
   },
   "options_show_highlighting": {
-    "message": "テキストの強調表示"
+    "message": "読んでいる文の表示"
   },
   "options_highlighting_off": {
-    "message": "消す"
+    "message": "表示しない"
   },
   "options_highlighting_popup": {
-    "message": "ポップアップで表示"
+    "message": "ポップアップに表示"
   },
   "options_highlighting_window": {
-    "message": "別ウィンドウで表示"
+    "message": "別のウィンドウに表示"
   },
   "options_highlighting_page": {
     "message": "ページ上に表示"
   },
   "options_audio_playback": {
-    "message": "オーディオ再生"
+    "message": "音声の再生"
   },
   "options_audio_playback_standalone": {
-    "message": "別のタブを使用する"
+    "message": "別のタブで再生"
   },
   "options_audio_playback_embedded": {
-    "message": "ページ内"
+    "message": "ページ内で再生"
   },
   "options_hotkeys_link": {
-    "message": "ショートカットキーを編集する"
+    "message": "ショートカットキーを変更"
   },
   "options_test_button": {
-    "message": "テスト"
+    "message": "試しに聞く"
   },
   "options_reset_button": {
-    "message": "リセット"
+    "message": "元に戻す"
   },
   "options_stop_button": {
     "message": "停止"
@@ -184,5 +184,76 @@
   },
   "google_translate_keep_page_open": {
     "message": "Read Aloudは、テキスト読み上げにGoogle翻訳を使用しています。このタブは開いたままにしてください。"
+  },
+  "options_enable_nghitts_voices": {
+    "message": "⚡ NghiTTS の声をインストール…"
+  },
+  "options_auto_select": {
+    "message": "自動で選ぶ"
+  },
+  "options_voice_note": {
+    "message": "注意: この声は予告なく使えなくなることがあります。"
+  },
+  "options_read_more": {
+    "message": "詳しくはブログへ（英語）"
+  },
+  "advanced_heading": {
+    "message": "詳細設定"
+  },
+  "advanced_fix_bt_silence_gap": {
+    "message": "Bluetooth ヘッドセットで、段落の最初の数語が聞こえないのを防ぐ"
+  },
+  "advanced_word_replacements_title": {
+    "message": "読み替え"
+  },
+  "advanced_word_replacements_placeholder": {
+    "message": "1 行に 1 つ、「単語 = 読み方」の形で書きます（大文字・小文字は区別しません）。読み方を空にすると、その単語は読みません。\n\nGIF = ジフ\ne.g. = 例えば\n[要出典] ="
+  },
+  "advanced_word_replacements_saving": {
+    "message": "保存中…"
+  },
+  "advanced_word_replacements_saved": {
+    "message": "保存しました"
+  },
+  "advanced_word_replacements_save_failed": {
+    "message": "保存できませんでした"
+  },
+  "advanced_word_replacements_error_separator": {
+    "message": "$LINE$ 行目: 「=」がありません",
+    "placeholders": {
+      "line": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "advanced_word_replacements_error_missing_word": {
+    "message": "$LINE$ 行目: 「=」の前に単語を書いてください",
+    "placeholders": {
+      "line": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "advanced_word_replacements_error_duplicate": {
+    "message": "$LINE$ 行目: 「$WORD$」は $FIRST_LINE$ 行目ですでに読み替えています",
+    "placeholders": {
+      "line": {
+        "content": "$1",
+        "example": "5"
+      },
+      "word": {
+        "content": "$2",
+        "example": "GIF"
+      },
+      "first_line": {
+        "content": "$3",
+        "example": "2"
+      }
+    }
+  },
+  "advanced_word_replacements_saved_with_errors": {
+    "message": "保存しました（エラーの行は無視されます）"
   }
 }

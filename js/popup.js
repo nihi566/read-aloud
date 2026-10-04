@@ -14,8 +14,8 @@ engineInitializingSubject
     rxjs.distinctUntilChanged()
   )
   .subscribe(engine => {
-    if (engine) $("#status").text(`${engine} TTS engine initializing...`).show()
-    else $("#status").hide()
+    if (engine) $("#status").text(`${engine} の音声を準備しています…`).addClass("is-info").show()
+    else $("#status.is-info").removeClass("is-info").hide()
   })
 
 $(function() {
@@ -69,6 +69,8 @@ async function init() {
   $("#increase-window-size").click(changeWindowSize.bind(null, +1));
   $("#toggle-dark-mode").click(toggleDarkMode);
   initQuickControls();
+  initKeyboardShortcuts();
+  initFollowCurrent();
 
   refreshSize();
   checkAnnouncements();
@@ -82,6 +84,8 @@ async function init() {
 function handleError(err) {
   if (!err) return;
   if (err.name == "CancellationException") return;
+  $("#status").removeClass("is-info");
+  setTimeout(fitPanel);
 
   if (/^{/.test(err.message)) {
     var errInfo = JSON.parse(err.message);
@@ -166,18 +170,19 @@ async function updateButtons() {
   updateLocalVoiceLoading(state == "LOADING" && speech)
 
   $("#imgLoading").toggle(state == "LOADING");
-  $("#btnSettings").toggle(state == "STOPPED");
   $("#btnPlay").toggle(state == "PAUSED" || state == "STOPPED");
   $("#btnPause").toggle(state == "PLAYING");
   $("#btnStop").toggle(state == "PAUSED" || state == "PLAYING" || state == "LOADING");
   $("#btnForward, #btnRewind").toggle(state == "PLAYING" || state == "PAUSED");
+  $("#play-hint").toggle(state == "STOPPED");
 
   if ((showHighlighting == 1 || showHighlighting == 2) && (state == "LOADING" || state == "PAUSED" || state == "PLAYING") && speech) {
-    $("#highlight, #toolbar").show()
+    $("#highlight-wrap, #toolbar").show()
     updateHighlighting(speech)
+    fitPanel()
   }
   else {
-    $("#highlight, #toolbar").hide()
+    $("#highlight-wrap, #toolbar").hide()
   }
 }
 
@@ -188,13 +193,18 @@ function updateLocalVoiceLoading(loadingSpeech) {
   if (!loadingSpeech) {
     localVoiceLoadingCheck = null
     $("#local-voice-loading").hide()
+    $("body").removeClass("voice-loading")
     return
   }
   if (localVoiceLoadingCheck) return
   const check = localVoiceLoadingCheck = getSetting("openaiCreds")
     .then(openaiCreds => isLocalVoiceLoading(openaiCreds, loadingSpeech.voiceName))
   check.then(loading => {
-    if (localVoiceLoadingCheck == check) $("#local-voice-loading").toggle(loading)
+    if (localVoiceLoadingCheck == check) {
+      $("#local-voice-loading").toggle(loading)
+      $("body").toggleClass("voice-loading", loading)
+      fitPanel()
+    }
   }, console.error)
 }
 
@@ -216,6 +226,7 @@ function updateHighlighting(speech) {
   }
 
   const pos = speech.position
+  $("#progress").text(`${pos.index + 1} / ${speech.texts.length}`)
   if (!elem.data("position") || positionDiffers(elem.data("position"), pos)) {
     elem.data("position", pos);
     elem.find(".active").removeClass("active");
@@ -264,11 +275,16 @@ function positionDiffers(left, right) {
     rangeDiffers(left.word, right.word)
 }
 
-function scrollIntoView(child, scrollParent) {
+function scrollIntoView(child, scrollParent, force) {
+  //改造版: don't pull the text away while the user is scrolling it; offer a button to come back instead
+  if (!force && isUserScrolling()) {
+    updateJumpButton()
+    return
+  }
   const childTop = child.offset().top - scrollParent.offset().top
   const childBottom = childTop + child.outerHeight()
-  if (childTop < 0 || childBottom >= scrollParent.height())
-    scrollParent.animate({scrollTop: scrollParent[0].scrollTop + childTop - 10})
+  if (force || childTop < 0 || childBottom >= scrollParent.height())
+    scrollParent.stop().animate({scrollTop: scrollParent[0].scrollTop + childTop - 10}, updateJumpButton)
 }
 
 
@@ -356,10 +372,15 @@ function refreshSize() {
       $("#highlight").css({
         "font-size": fontSize,
       })
-      if (queryString.isPopup) $("#highlight").css({
-        width: isMobileOS() ? "100%" : windowSize[0],
-        height: windowSize[1]
-      })
+      if (queryString.isPopup) {
+        $("#highlight").css({
+          width: isMobileOS() ? "100%" : windowSize[0],
+        }).data("targetHeight", windowSize[1])
+        //keep the popup as wide in every state, so it doesn't jump when reading starts
+        if (!isMobileOS()) $("body").css("min-width", windowSize[0])
+        fitPanel()
+      }
+      scrollToCurrent(true)
     })
   function getFontSize(settings) {
     switch (settings.highlightFontSize || defaults.highlightFontSize) {
@@ -411,11 +432,13 @@ function checkAnnouncements() {
         }
       }
     })
+    .catch(console.debug)
 }
 
 function showAnnouncement(ann) {
   var html = escapeHtml(ann.text).replace(/\[(.*?)\]/g, "<a target='_blank' href='" + ann.link + "'>$1</a>").replace(/\n/g, "<br/>");
   $("#footer").html(html).addClass("announcement");
+  fitPanel();
   if (ann.disableIfClick)
     $("#footer a").click(function() {
       ann.disabled = true;
@@ -435,12 +458,6 @@ function toggleDarkMode() {
 const QUICK_RATE_STEP = 0.1
 const QUICK_RATE_MIN = 0.5
 const QUICK_RATE_MAX = 3
-const QUICK_VOICE_LABELS = {
-  "sbv2-amitaro": "あみたろ",
-  "sbv2-koharune-ami": "小春音アミ",
-  "piper-female": "Piper 女性",
-  "piper-male": "Piper 男性",
-}
 
 function initQuickControls() {
   $("#decrease-rate").click(() => changeRate(-QUICK_RATE_STEP).catch(handleError))
@@ -451,7 +468,7 @@ function initQuickControls() {
 
   observeSetting("voiceName")
     .pipe(rxjs.switchMap(voiceName => observeSetting("rate" + (voiceName || ""))))
-    .subscribe(rate => $("#rate-value").text((rate || defaults.rate).toFixed(1) + "x"))
+    .subscribe(rate => $("#rate-value").text(formatRate(rate || defaults.rate)))
 
   rxjs.combineLatest([observeSetting("voiceName"), rxjs.defer(getQuickVoices)])
     .subscribe(([voiceName, voices]) => {
@@ -459,10 +476,9 @@ function initQuickControls() {
       const select = $("#quick-voice").empty()
       if (!voiceName) $("<option>").val("").text("自動で選ぶ").appendTo(select)
       for (const name of names) {
-        const id = name.replace(/^OpenAI /, "")
-        $("<option>").val(name).text(QUICK_VOICE_LABELS[id] || name).appendTo(select)
+        $("<option>").val(name).text(localVoiceLabel(name).replace(/^OpenAI /, "")).attr("title", name).appendTo(select)
       }
-      select.val(voiceName || "")
+      select.val(voiceName || "").attr("title", voiceName ? localVoiceLabel(voiceName) : "自動で選ぶ")
     })
 }
 
@@ -496,4 +512,109 @@ async function changeVoice(voiceName) {
 async function restartIfReading() {
   const {state} = await bgPageInvoke("getPlaybackState")
   if (state != "STOPPED") await bgPageInvoke("restartCurrent")
+}
+
+
+
+//keyboard（改造版）: Space = play/pause, ←/→ = previous/next sentence, ↑/↓ = faster/slower.
+//Keys typed into a select or an input keep their usual meaning
+function initKeyboardShortcuts() {
+  $(document).on("keydown", function(e) {
+    if (e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return
+    if ($(e.target).is("input, select, textarea, [contenteditable]")) return
+    const visible = sel => $(sel).is(":visible")
+    switch (e.key) {
+      case " ":
+        if ($(e.target).is("button")) return
+        if (visible("#btnPause")) $("#btnPause").click()
+        else if (visible("#btnPlay")) $("#btnPlay").click()
+        break
+      case "ArrowLeft":
+        if (visible("#btnRewind")) $("#btnRewind").click()
+        break
+      case "ArrowRight":
+        if (visible("#btnForward")) $("#btnForward").click()
+        break
+      case "ArrowUp":
+      case "ArrowDown":
+        //arrow keys scroll the reading panel when it has the focus
+        if ($(e.target).closest("#highlight").length) return
+        $(e.key == "ArrowUp" ? "#increase-rate" : "#decrease-rate").click()
+        break
+      default:
+        return
+    }
+    e.preventDefault()
+  })
+}
+
+
+
+//panel size（改造版）: Chrome's popup is at most 600px tall, so the reading panel gives up height
+//when notices or a large window size would push the toolbar out of view
+const POPUP_MAX_HEIGHT = 600
+const PANEL_MIN_HEIGHT = 140
+
+function fitPanel() {
+  if (!queryString.isPopup) return
+  const panel = $("#highlight")
+  if (!panel.is(":visible")) return
+  const target = panel.data("targetHeight") || 420
+  const others = document.body.scrollHeight - panel.outerHeight()
+  const height = Math.max(PANEL_MIN_HEIGHT, Math.min(target, POPUP_MAX_HEIGHT - others))
+  if (Math.abs(panel.outerHeight() - height) > 1) panel.css("height", height)
+}
+
+
+//follow the current sentence（改造版）
+const USER_SCROLL_GRACE_MS = 4000
+var lastUserScroll = 0
+
+function initFollowCurrent() {
+  $("#highlight")
+    .on("wheel touchmove mousedown keydown", () => lastUserScroll = Date.now())
+    .on("scroll", throttle(updateJumpButton))
+  //text reflows (fonts loading, size changes): keep the current sentence in view
+  if (window.ResizeObserver) new ResizeObserver(throttle(() => scrollToCurrent())).observe($("#highlight").get(0))
+  if (document.fonts) document.fonts.ready.then(() => scrollToCurrent())
+  $("#jump-current").click(function() {
+    lastUserScroll = 0
+    scrollToCurrent(true)
+  })
+}
+
+function isUserScrolling() {
+  return Date.now() - lastUserScroll < USER_SCROLL_GRACE_MS
+}
+
+function scrollToCurrent(force) {
+  const panel = $("#highlight")
+  const active = panel.find(".active").first()
+  if (panel.is(":visible") && active.length) scrollIntoView(active, panel, force)
+}
+
+function updateJumpButton() {
+  const panel = $("#highlight")
+  const active = panel.find(".active").first()
+  let away = false
+  if (panel.is(":visible") && active.length) {
+    const top = active.offset().top - panel.offset().top
+    away = top + active.outerHeight() < 0 || top > panel.innerHeight()
+    $("#jump-current .material-icons").text(top < 0 ? "arrow_upward" : "arrow_downward")
+  }
+  $("#jump-current").toggleClass("visible", away)
+}
+
+function throttle(fn) {
+  let timer = null
+  return function() {
+    if (timer) return
+    timer = setTimeout(() => { timer = null; fn() }, 100)
+  }
+}
+
+//1 → "1.0x", 1.1 → "1.1x", 1.12 → "1.12x"
+function formatRate(rate) {
+  const text = String(Number(rate.toFixed(2)))
+  return (text.includes(".") ? text : text + ".0") + "x"
 }
