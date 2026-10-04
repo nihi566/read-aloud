@@ -416,10 +416,14 @@ function Doc(source, onEnd) {
     const speech = activeSpeech
     if (!speech || !lastTexts) return
     const index = speech.getInfo().position.index
+    const paused = await speech.getState() == "PAUSED"
+    if (activeSpeech != speech) return
     speech.onEnd = null
     activeSpeech = null
     speech.stop()
-    return read(lastTexts, false, index)
+    await read(lastTexts, false, index)
+    //keep it paused if it was paused (seek and play resume the playback)
+    if (paused && activeSpeech) activeSpeech.pause()
   }
 
   function seek(n) {

@@ -35,7 +35,10 @@ function setup() {
     this.index = 0;
     this.onEnd = null;
     this.getInfo = () => ({ texts: ["一文目。", "二文目。", "三文目。"], position: { index: this.index } });
+    this.state = "PLAYING";
+    this.getState = async () => this.state;
     this.play = () => { this.calls.push("play"); };
+    this.pause = () => { this.calls.push("pause"); };
     this.seek = (n) => { this.calls.push(`seek ${n}`); };
     this.stop = () => {
       this.calls.push("stop");
@@ -87,6 +90,17 @@ test("新しい読み上げの文の数が減っても、範囲の中の位置�
   speeches[0].index = 7;
   await doc.restartCurrent();
   assert.deepEqual(speeches[1].calls, ["seek 2"]);
+});
+
+test("一時停止中に変えたときは、新しい設定で読み直す準備だけして一時停止のままにする", async () => {
+  const { doc, settings, speeches } = setup();
+  await doc.play();
+  speeches[0].index = 2;
+  speeches[0].state = "PAUSED";
+  settings["rateOpenAI piper-male"] = 1.2;
+  await doc.restartCurrent();
+  assert.equal(speeches[1].options.rate, 1.2);
+  assert.deepEqual(speeches[1].calls, ["seek 2", "pause"]);
 });
 
 test("読み上げていないときは何もしない", async () => {
