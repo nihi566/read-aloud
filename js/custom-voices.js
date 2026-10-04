@@ -202,6 +202,12 @@ $(function() {
     $(".openai .endpoint-url").text(endpointUrl)
     $(".openai .api-key").text(apiKey && (apiKey.slice(0,13) + "*****" + apiKey.slice(-5)))
     $(".openai .voice-list").text(voiceList.map(x => x.voice).join(", "))
+    if (creds && isLocalVoiceServer(creds.url)) {
+      // このパソコンの音声サーバーは、保存した Voice List ではなくサーバーの一覧を使う（js/local-voice-server.js）
+      getOpenaiVoiceList(creds, voiceList).then(list => {
+        $(".openai .voice-list").text(list.map(x => x.voice).join(", ") + "（このパソコンの音声サーバーから自動で読み込み）")
+      })
+    }
     $(".openai .txt-endpoint-url").val(endpointUrl)
     $(".openai .txt-api-key").val(apiKey)
     $(".openai .txt-voice-list").val(JSON.stringify(voiceList, null, 2))
