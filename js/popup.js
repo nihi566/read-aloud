@@ -14,8 +14,8 @@ engineInitializingSubject
     rxjs.distinctUntilChanged()
   )
   .subscribe(engine => {
-    if (engine) $("#status").text(`${engine} TTS engine initializing...`).show()
-    else $("#status").hide()
+    if (engine) $("#status").text(`${engine} の音声を準備しています…`).addClass("is-info").show()
+    else $("#status.is-info").removeClass("is-info").hide()
   })
 
 $(function() {
@@ -82,6 +82,7 @@ async function init() {
 function handleError(err) {
   if (!err) return;
   if (err.name == "CancellationException") return;
+  $("#status").removeClass("is-info");
 
   if (/^{/.test(err.message)) {
     var errInfo = JSON.parse(err.message);
@@ -166,11 +167,11 @@ async function updateButtons() {
   updateLocalVoiceLoading(state == "LOADING" && speech)
 
   $("#imgLoading").toggle(state == "LOADING");
-  $("#btnSettings").toggle(state == "STOPPED");
   $("#btnPlay").toggle(state == "PAUSED" || state == "STOPPED");
   $("#btnPause").toggle(state == "PLAYING");
   $("#btnStop").toggle(state == "PAUSED" || state == "PLAYING" || state == "LOADING");
   $("#btnForward, #btnRewind").toggle(state == "PLAYING" || state == "PAUSED");
+  $("#play-hint").toggle(state == "STOPPED");
 
   if ((showHighlighting == 1 || showHighlighting == 2) && (state == "LOADING" || state == "PAUSED" || state == "PLAYING") && speech) {
     $("#highlight, #toolbar").show()
@@ -188,13 +189,17 @@ function updateLocalVoiceLoading(loadingSpeech) {
   if (!loadingSpeech) {
     localVoiceLoadingCheck = null
     $("#local-voice-loading").hide()
+    $("body").removeClass("voice-loading")
     return
   }
   if (localVoiceLoadingCheck) return
   const check = localVoiceLoadingCheck = getSetting("openaiCreds")
     .then(openaiCreds => isLocalVoiceLoading(openaiCreds, loadingSpeech.voiceName))
   check.then(loading => {
-    if (localVoiceLoadingCheck == check) $("#local-voice-loading").toggle(loading)
+    if (localVoiceLoadingCheck == check) {
+      $("#local-voice-loading").toggle(loading)
+      $("body").toggleClass("voice-loading", loading)
+    }
   }, console.error)
 }
 
@@ -216,6 +221,7 @@ function updateHighlighting(speech) {
   }
 
   const pos = speech.position
+  $("#progress").text(`${pos.index + 1} / ${speech.texts.length}`)
   if (!elem.data("position") || positionDiffers(elem.data("position"), pos)) {
     elem.data("position", pos);
     elem.find(".active").removeClass("active");
@@ -435,12 +441,6 @@ function toggleDarkMode() {
 const QUICK_RATE_STEP = 0.1
 const QUICK_RATE_MIN = 0.5
 const QUICK_RATE_MAX = 3
-const QUICK_VOICE_LABELS = {
-  "sbv2-amitaro": "あみたろ",
-  "sbv2-koharune-ami": "小春音アミ",
-  "piper-female": "Piper 女性",
-  "piper-male": "Piper 男性",
-}
 
 function initQuickControls() {
   $("#decrease-rate").click(() => changeRate(-QUICK_RATE_STEP).catch(handleError))
@@ -459,8 +459,7 @@ function initQuickControls() {
       const select = $("#quick-voice").empty()
       if (!voiceName) $("<option>").val("").text("自動で選ぶ").appendTo(select)
       for (const name of names) {
-        const id = name.replace(/^OpenAI /, "")
-        $("<option>").val(name).text(QUICK_VOICE_LABELS[id] || name).appendTo(select)
+        $("<option>").val(name).text(localVoiceLabel(name)).appendTo(select)
       }
       select.val(voiceName || "")
     })

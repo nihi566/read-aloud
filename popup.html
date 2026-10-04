@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Read Aloud（改造版）</title>
 
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
   <link rel="stylesheet" type="text/css" href="css/common.css">
   <link rel="stylesheet" type="text/css" href="css/popup.css">
 
@@ -17,56 +16,83 @@
   <script src="js/popup.js"></script>
 </head>
 <body>
-  <div id="status">
+  <header id="app-bar">
+    <img id="app-icon" src="img/icon-48.png" alt="" />
+    <span id="app-title">Read Aloud</span>
+    <span id="fork-label" title="日本語を 1 文ずつ読む改造版（nihi566/read-aloud の ja-sentence-highlight）">改造版</span>
+    <button id="toggle-dark-mode" type="button" class="icon-btn" title="ダークモード切り替え" aria-label="ダークモード切り替え">
+      <i class="material-icons">dark_mode</i>
+    </button>
+    <button id="btnSettings" type="button" class="icon-btn" title="設定" aria-label="設定">
+      <i class="material-icons">settings</i>
+    </button>
+  </header>
+
+  <div id="status" role="alert">
   </div>
   <div id="local-voice-loading" role="status">声を読み込み中です（しばらく使わなかった後の最初の 1 回は 5〜10 秒かかります）</div>
+
   <div id="buttons">
-    <i class="material-icons button-1" id="btnRewind">&#xe020;</i>
-    <img src="img/loading.gif" id="imgLoading" />
-    <i class="material-icons button-1" id="btnPlay">&#xe037;</i>
-    <i class="material-icons button-1" id="btnPause">pause</i>
-    <i class="material-icons button-1" id="btnStop">stop</i>
-    <i class="material-icons button-1" id="btnSettings">settings</i>
-    <i class="material-icons button-1" id="btnForward">&#xe01f;</i>
+    <button id="btnRewind" type="button" class="transport-btn" title="前の文へ" aria-label="前の文へ">
+      <i class="material-icons">skip_previous</i>
+    </button>
+    <div id="primary-slot">
+      <span id="imgLoading" class="spinner" role="status" aria-label="読み込み中"></span>
+      <button id="btnPlay" type="button" class="primary-btn" title="読み上げる" aria-label="読み上げる">
+        <i class="material-icons">play_arrow</i>
+      </button>
+      <button id="btnPause" type="button" class="primary-btn" title="一時停止" aria-label="一時停止">
+        <i class="material-icons">pause</i>
+      </button>
+    </div>
+    <button id="btnStop" type="button" class="transport-btn" title="停止" aria-label="停止">
+      <i class="material-icons">stop</i>
+    </button>
+    <button id="btnForward" type="button" class="transport-btn" title="次の文へ" aria-label="次の文へ">
+      <i class="material-icons">skip_next</i>
+    </button>
   </div>
+  <div id="play-hint">このページを読み上げる</div>
+
   <div id="quick-controls">
-    <div class="btn-group" title="読み上げの速さ（読み上げ中に変えると、今の文から読み直す）">
-      <button id="decrease-rate" type="button" class="btn btn-sm btn-light" aria-label="遅くする">
+    <div class="stepper" title="読み上げの速さ（読み上げ中に変えると、今の文から読み直す）">
+      <button id="decrease-rate" type="button" class="stepper-btn" aria-label="遅くする">
         <i class="material-icons">remove</i>
       </button>
       <span id="rate-value"></span>
-      <button id="increase-rate" type="button" class="btn btn-sm btn-light" aria-label="速くする">
+      <button id="increase-rate" type="button" class="stepper-btn" aria-label="速くする">
         <i class="material-icons">add</i>
       </button>
     </div>
-    <select id="quick-voice" title="声（読み上げ中に変えると、今の文から読み直す）" aria-label="声"></select>
+    <label class="voice-picker" title="声（読み上げ中に変えると、今の文から読み直す）">
+      <i class="material-icons">record_voice_over</i>
+      <select id="quick-voice" aria-label="声"></select>
+    </label>
   </div>
+
   <div id="highlight">
   </div>
+
   <div id="toolbar">
-    <div class="btn-group">
-      <button id="decrease-font-size" type="button" class="btn btn-sm btn-light">
-        A-
+    <div class="btn-group" title="文字の大きさ">
+      <button id="decrease-font-size" type="button" class="btn" aria-label="文字を小さく">
+        <i class="material-icons">text_decrease</i>
       </button>
-      <button id="increase-font-size" type="button" class="btn btn-sm btn-light">
-        A+
-      </button>
-    </div>
-    <div class="btn-group">
-      <button id="toggle-dark-mode" type="button" class="btn btn-sm btn-light">
-        <i class="material-icons">dark_mode</i>
+      <button id="increase-font-size" type="button" class="btn" aria-label="文字を大きく">
+        <i class="material-icons">text_increase</i>
       </button>
     </div>
-    <div class="btn-group window-size">
-      <button id="decrease-window-size" type="button" class="btn btn-sm btn-light">
-        <i class="material-icons">remove</i>
+    <span id="progress" aria-live="off"></span>
+    <div class="btn-group window-size" title="ウィンドウの大きさ">
+      <button id="decrease-window-size" type="button" class="btn" aria-label="ウィンドウを小さく">
+        <i class="material-icons">close_fullscreen</i>
       </button>
-      <button id="increase-window-size" type="button" class="btn btn-sm btn-light">
-        <i class="material-icons">add</i>
+      <button id="increase-window-size" type="button" class="btn" aria-label="ウィンドウを大きく">
+        <i class="material-icons">open_in_full</i>
       </button>
     </div>
-    <div id="fork-label" title="日本語を 1 文ずつ読む改造版（nihi566/read-aloud の ja-sentence-highlight）">改造版</div>
   </div>
+
   <div id="footer">
     <a href="report.html?referer=popup.html">report issues</a>
   </div>

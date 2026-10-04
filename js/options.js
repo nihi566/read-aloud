@@ -391,7 +391,7 @@
     groups.standard.forEach(function(voice) {
       $("<option>")
         .val(voice.voiceName)
-        .text(voice.voiceName)
+        .text(localVoiceLabel(voice.voiceName))
         .appendTo(standard);
     });
 
