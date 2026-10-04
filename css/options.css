@@ -41,7 +41,7 @@ body.dark-mode {
 
 body, body.dark-mode {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+  font-family: "Noto Sans JP Bundled", "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
   font-size: 15px;
   font-weight: 400;
   line-height: 1.5;
@@ -477,7 +477,7 @@ input[type=checkbox] + label {
 }
 
 #word-replacements {
-  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Noto Sans JP Bundled", monospace;
   font-size: .875rem;
   resize: vertical;
   user-select: text;

@@ -45,7 +45,7 @@ body {
   min-width: 320px;
   background-color: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+  font-family: "Noto Sans JP Bundled", "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
 }
 body.dark-mode {
   background-color: var(--bg);
