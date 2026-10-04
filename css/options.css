@@ -18,6 +18,7 @@ body {
   --track: #e3e6ea;
   --input-bg: #ffffff;
   --success: #1f9d55;
+  --danger-text: #b42318;
   --warning-text: #2a4a8a;
   --focus: 0 0 0 3px rgba(240, 100, 58, .3);
 }
@@ -36,6 +37,7 @@ body.dark-mode {
   --track: #3a3f49;
   --input-bg: #1b1e23;
   --success: #3ccf7f;
+  --danger-text: #ff9b9b;
   --warning-text: #b7c8ff;
 }
 
@@ -55,17 +57,28 @@ body, body.dark-mode {
   padding: 16px 18px 18px;
 }
 
+/* link to the advanced options (読み替え etc.) */
 #expand-button {
-  text-decoration: none;
-  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-left: 4px;
   vertical-align: middle;
+  font-size: 19px;
+  text-decoration: none;
   color: var(--muted);
-  opacity: .6;
+  border-radius: 50%;
   cursor: pointer;
-  display: none;
 }
-h2:hover #expand-button {
-  display: inline;
+#expand-button:hover {
+  color: var(--text);
+  background-color: var(--surface-hover);
+}
+#expand-button:focus-visible, button.close:focus-visible, #hotkeys-link:focus-visible, .slider .knob:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
 }
 
 /* back button, shown when opened from the popup */
@@ -110,7 +123,7 @@ small {
 .layout {
   margin-top: 14px;
   padding: 6px 16px;
-  min-width: 400px;
+  min-width: min(400px, 100%);
   display: grid;
   grid-template-columns: minmax(7.5em, auto) minmax(0, 1fr);
   grid-gap: 0;
@@ -345,6 +358,17 @@ input[type=checkbox] + label {
   display: none;
 }
 
+#status {
+  color: var(--danger-text);
+  overflow-wrap: anywhere;
+}
+#account-info a {
+  white-space: nowrap;
+}
+#account-info strong {
+  overflow-wrap: anywhere;
+}
+
 #rate-warning {
   color: var(--warning-text);
   display: none;
@@ -432,8 +456,31 @@ input[type=checkbox] + label {
   touch-action: none;
   transition: box-shadow .15s;
 }
-.slider .knob:hover, .slider .knob:active {
+.slider .knob:hover, .slider .knob.dragging {
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+/* value bubble above the knob */
+.slider .knob[data-value]::after {
+  content: attr(data-value);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--bg);
+  background-color: var(--text);
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition: opacity .15s, transform .15s;
+}
+.slider .knob:hover::after, .slider .knob.dragging::after, .slider .knob:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 #account-info {
@@ -442,7 +489,7 @@ input[type=checkbox] + label {
 }
 
 #advanced-options {
-  min-width: 500px;
+  min-width: 0;
   margin-top: 1.5rem;
   display: grid;
   grid-template-columns: min-content auto;
@@ -483,9 +530,9 @@ input[type=checkbox] + label {
   user-select: text;
 }
 .dark-mode #word-replacements {
-  background-color: #323232;
-  border-color: #555;
-  color: #ddd;
+  background-color: var(--input-bg);
+  border-color: var(--border);
+  color: var(--text);
 }
 
 #word-replacements-errors {
@@ -493,11 +540,9 @@ input[type=checkbox] + label {
   margin: .5rem 0 0;
   padding: 0;
   font-size: .875rem;
-  color: #b02a37;
+  color: var(--danger-text);
 }
 #word-replacements-errors:empty {
   display: none;
 }
-.dark-mode #word-replacements-errors {
-  color: #ff8a80;
-}
+

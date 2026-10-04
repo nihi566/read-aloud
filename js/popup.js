@@ -70,6 +70,7 @@ async function init() {
   $("#toggle-dark-mode").click(toggleDarkMode);
   initQuickControls();
   initKeyboardShortcuts();
+  initFollowCurrent();
 
   refreshSize();
   checkAnnouncements();
@@ -175,11 +176,12 @@ async function updateButtons() {
   $("#play-hint").toggle(state == "STOPPED");
 
   if ((showHighlighting == 1 || showHighlighting == 2) && (state == "LOADING" || state == "PAUSED" || state == "PLAYING") && speech) {
-    $("#highlight, #toolbar").show()
+    $("#highlight-wrap, #toolbar").show()
     updateHighlighting(speech)
+    fitPanel()
   }
   else {
-    $("#highlight, #toolbar").hide()
+    $("#highlight-wrap, #toolbar").hide()
   }
 }
 
@@ -271,11 +273,16 @@ function positionDiffers(left, right) {
     rangeDiffers(left.word, right.word)
 }
 
-function scrollIntoView(child, scrollParent) {
+function scrollIntoView(child, scrollParent, force) {
+  //改造版: don't pull the text away while the user is scrolling it; offer a button to come back instead
+  if (!force && isUserScrolling()) {
+    updateJumpButton()
+    return
+  }
   const childTop = child.offset().top - scrollParent.offset().top
   const childBottom = childTop + child.outerHeight()
-  if (childTop < 0 || childBottom >= scrollParent.height())
-    scrollParent.animate({scrollTop: scrollParent[0].scrollTop + childTop - 10})
+  if (force || childTop < 0 || childBottom >= scrollParent.height())
+    scrollParent.stop().animate({scrollTop: scrollParent[0].scrollTop + childTop - 10}, updateJumpButton)
 }
 
 
@@ -363,10 +370,15 @@ function refreshSize() {
       $("#highlight").css({
         "font-size": fontSize,
       })
-      if (queryString.isPopup) $("#highlight").css({
-        width: isMobileOS() ? "100%" : windowSize[0],
-        height: windowSize[1]
-      })
+      if (queryString.isPopup) {
+        $("#highlight").css({
+          width: isMobileOS() ? "100%" : windowSize[0],
+        }).data("targetHeight", windowSize[1])
+        //keep the popup as wide in every state, so it doesn't jump when reading starts
+        if (!isMobileOS()) $("body").css("min-width", windowSize[0] + 28)
+        fitPanel()
+      }
+      scrollToCurrent(true)
     })
   function getFontSize(settings) {
     switch (settings.highlightFontSize || defaults.highlightFontSize) {
@@ -418,6 +430,7 @@ function checkAnnouncements() {
         }
       }
     })
+    .catch(console.debug)
 }
 
 function showAnnouncement(ann) {
@@ -460,9 +473,9 @@ function initQuickControls() {
       const select = $("#quick-voice").empty()
       if (!voiceName) $("<option>").val("").text("自動で選ぶ").appendTo(select)
       for (const name of names) {
-        $("<option>").val(name).text(localVoiceLabel(name)).appendTo(select)
+        $("<option>").val(name).text(localVoiceLabel(name).replace(/^OpenAI /, "")).attr("title", name).appendTo(select)
       }
-      select.val(voiceName || "")
+      select.val(voiceName || "").attr("title", voiceName ? localVoiceLabel(voiceName) : "自動で選ぶ")
     })
 }
 
@@ -530,4 +543,65 @@ function initKeyboardShortcuts() {
     }
     e.preventDefault()
   })
+}
+
+
+
+//panel size（改造版）: Chrome's popup is at most 600px tall, so the reading panel gives up height
+//when notices or a large window size would push the toolbar out of view
+const POPUP_MAX_HEIGHT = 600
+const PANEL_MIN_HEIGHT = 140
+
+function fitPanel() {
+  if (!queryString.isPopup) return
+  const panel = $("#highlight")
+  if (!panel.is(":visible")) return
+  const target = panel.data("targetHeight") || 420
+  const others = document.body.scrollHeight - panel.outerHeight()
+  const height = Math.max(PANEL_MIN_HEIGHT, Math.min(target, POPUP_MAX_HEIGHT - others))
+  if (Math.abs(panel.outerHeight() - height) > 1) panel.css("height", height)
+}
+
+
+//follow the current sentence（改造版）
+const USER_SCROLL_GRACE_MS = 4000
+var lastUserScroll = 0
+
+function initFollowCurrent() {
+  $("#highlight")
+    .on("wheel touchmove mousedown", () => lastUserScroll = Date.now())
+    .on("scroll", throttle(updateJumpButton))
+  $("#jump-current").click(function() {
+    lastUserScroll = 0
+    scrollToCurrent(true)
+  })
+}
+
+function isUserScrolling() {
+  return Date.now() - lastUserScroll < USER_SCROLL_GRACE_MS
+}
+
+function scrollToCurrent(force) {
+  const panel = $("#highlight")
+  const active = panel.find(".active").first()
+  if (panel.is(":visible") && active.length) scrollIntoView(active, panel, force)
+}
+
+function updateJumpButton() {
+  const panel = $("#highlight")
+  const active = panel.find(".active").first()
+  let away = false
+  if (panel.is(":visible") && active.length) {
+    const top = active.offset().top - panel.offset().top
+    away = top + active.outerHeight() < 0 || top > panel.innerHeight()
+  }
+  $("#jump-current").toggleClass("visible", away)
+}
+
+function throttle(fn) {
+  let timer = null
+  return function() {
+    if (timer) return
+    timer = setTimeout(() => { timer = null; fn() }, 100)
+  }
 }
