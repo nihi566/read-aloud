@@ -169,7 +169,7 @@ const voices$ = rxjs.combineLatest({
     settings.supertonicVoices || [],
     settings.piperVoices || [],
     settings.nghiTtsVoices || [],
-    settings.openaiCreds ? openaiTtsEngine.getVoices() : [],
+    openaiTtsEngine.getVoices(),
     settings.awsCreds ? amazonPollyTtsEngine.getVoices() : [],
     settings.gcpCreds ? googleWavenetTtsEngine.getVoices() : googleWavenetTtsEngine.getFreeVoices(),
     settings.ibmCreds ? ibmWatsonTtsEngine.getVoices() : [],

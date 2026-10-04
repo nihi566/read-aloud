@@ -993,7 +993,7 @@ function OpenaiTtsEngine() {
   }
   this.getVoices = async function() {
     const openaiCreds = await getSetting("openaiCreds")
-    const voiceList = openaiCreds ? (openaiCreds.voiceList || this.defaultVoiceList) : []
+    const voiceList = await getOpenaiVoiceList(openaiCreds, this.defaultVoiceList)
     return voiceList.map(({voice, lang, langs}) => ({
       voiceName: "OpenAI " + voice,
       lang,
@@ -1006,8 +1006,8 @@ function OpenaiTtsEngine() {
     return cache.fetchCached(
       JSON.stringify([text, voiceId]),
       async () => {
-        const {openaiCreds} = await getSettings(["openaiCreds"])
-        const voiceInfo = openaiCreds.voiceList.find(x => x.voice == voiceId)
+        const openaiCreds = effectiveOpenaiCreds((await getSettings(["openaiCreds"])).openaiCreds)
+        const voiceInfo = openaiVoiceInfo(openaiCreds, voiceId)
         assert(voiceInfo, "Voice not found " + voiceId)
         const res = await fetch(openaiCreds.url + "/audio/speech", {
           method: "POST",
