@@ -89,3 +89,33 @@ test("合成するときの声の情報: 保存した Voice List に無くても
   assert.deepEqual(plain(ctx.openaiVoiceInfo(ctx.effectiveOpenaiCreds(null), "sbv2-amitaro")), { voice: "sbv2-amitaro" });
   assert.equal(ctx.openaiVoiceInfo({ url: "https://api.openai.com/v1", voiceList: stored }, "sbv2-amitaro"), undefined);
 });
+
+// 読み込み待ちの表示（Style-Bert-VITS2 の声は、使わない時間が続くと GPU から外れ、次の最初の読み上げで 5〜10 秒待つ）
+const health = (loaded) => ({ status: "ok", sbv2: { running: loaded.length > 0, loaded, idle_sec: 600 } });
+
+test("読み込み待ち: sbv2 の声がまだ読み込まれていなければ待つ、読み込み済み・Piper の声・ほかのサーバーなら待たない", async () => {
+  const { ctx, calls } = load(() => ok(health([])));
+  assert.equal(await ctx.isLocalVoiceLoading(null, "OpenAI sbv2-amitaro"), true);
+  assert.equal(await ctx.isLocalVoiceLoading({ url: "http://127.0.0.1:5124/v1" }, "OpenAI sbv2-koharune-ami:るんるん"), true);
+  assert.deepEqual(calls, ["http://127.0.0.1:5123/health", "http://127.0.0.1:5124/health"]);
+
+  const loaded = load(() => ok(health(["sbv2-amitaro"])));
+  assert.equal(await loaded.ctx.isLocalVoiceLoading(null, "OpenAI sbv2-amitaro:01"), false);
+  assert.equal(await loaded.ctx.isLocalVoiceLoading(null, "OpenAI sbv2-koharune-ami"), true);
+
+  const other = load(() => ok(health([])));
+  assert.equal(await other.ctx.isLocalVoiceLoading(null, "OpenAI piper-male"), false);
+  assert.equal(await other.ctx.isLocalVoiceLoading({ url: "https://api.openai.com/v1" }, "OpenAI sbv2-amitaro"), false);
+  assert.equal(await other.ctx.isLocalVoiceLoading(null, "Microsoft Haruka"), false);
+  assert.equal(await other.ctx.isLocalVoiceLoading(null, undefined), false);
+  assert.deepEqual(other.calls, []);
+});
+
+test("読み込み待ち: サーバーが応答しない・sbv2 の情報が無ければ出さない", async () => {
+  const down = load(() => {
+    throw new Error("down");
+  });
+  assert.equal(await down.ctx.isLocalVoiceLoading(null, "OpenAI sbv2-amitaro"), false);
+  assert.equal(await load(() => ({ ok: false, status: 500 })).ctx.isLocalVoiceLoading(null, "OpenAI sbv2-amitaro"), false);
+  assert.equal(await load(() => ok({ status: "ok", sbv2: null })).ctx.isLocalVoiceLoading(null, "OpenAI sbv2-amitaro"), false);
+});

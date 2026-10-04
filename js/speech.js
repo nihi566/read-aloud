@@ -80,6 +80,7 @@ function Speech(texts, options) {
         index: enginePlaybackState ? enginePlaybackState.index : playlist.getIndex()
       },
       isRTL: /^(ar|az|dv|he|iw|ku|fa|ur)\b/.test(options.lang),
+      voiceName: options.voice && options.voice.voiceName,
       engine: immediate(() => {
         switch (engine) {
           case piperTtsEngine: return 'Piper'
