@@ -163,6 +163,7 @@ async function updateButtons() {
 
   if (playbackErr) handleError(playbackErr)
   engineInitializingSubject.next(state == "LOADING" && speech?.engine)
+  updateLocalVoiceLoading(state == "LOADING" && speech)
 
   $("#imgLoading").toggle(state == "LOADING");
   $("#btnSettings").toggle(state == "STOPPED");
@@ -178,6 +179,23 @@ async function updateButtons() {
   else {
     $("#highlight, #toolbar").hide()
   }
+}
+
+//改造版: while the local voice server loads a Style-Bert-VITS2 voice (5-10 seconds after it was idle),
+//say so instead of showing only the spinner. Asks the server once per loading spell
+var localVoiceLoadingCheck = null
+function updateLocalVoiceLoading(loadingSpeech) {
+  if (!loadingSpeech) {
+    localVoiceLoadingCheck = null
+    $("#local-voice-loading").hide()
+    return
+  }
+  if (localVoiceLoadingCheck) return
+  const check = localVoiceLoadingCheck = getSetting("openaiCreds")
+    .then(openaiCreds => isLocalVoiceLoading(openaiCreds, loadingSpeech.voiceName))
+  check.then(loading => {
+    if (localVoiceLoadingCheck == check) $("#local-voice-loading").toggle(loading)
+  }, console.error)
 }
 
 function updateHighlighting(speech) {
