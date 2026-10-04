@@ -26,12 +26,15 @@ function SimpleSource(texts, opts) {
 function TabSource() {
   var waiting = true;
   var sendToSource;
+  var highlighted = false;
+  var highlightTabId = null;
 
   this.ready = brapi.storage.local.get(["sourceUri"])
     .then(({sourceUri: uri}) => {
       if (uri.startsWith("contentscript:")) {
         const tabId = Number(uri.substr(14))
         sendToSource = sendToContentScript.bind(null, tabId)
+        highlightTabId = tabId
         return sendToSource({method: "getDocumentInfo"})
       }
       else if (uri.startsWith("epubreader:")) {
@@ -69,11 +72,26 @@ function TabSource() {
       .finally(function() {waiting = false})
   }
   this.close = function() {
+    if (highlighted) {
+      highlighted = false
+      sendHighlight({method: "clearHighlight"})
+    }
     return Promise.resolve();
   }
   this.getUri = function() {
     return this.ready
       .then(function(info) {return info.url})
+  }
+  this.highlight = function(text) {
+    if (highlightTabId == null) return
+    highlighted = true
+    sendHighlight({method: "highlightText", args: [text]})
+  }
+
+  //best effort: the tab may have navigated or closed, which must not affect playback
+  function sendHighlight(message) {
+    message.dest = "contentScript"
+    brapi.tabs.sendMessage(highlightTabId, message).catch(function() {})
   }
 
   async function sendToContentScript(tabId, message) {
@@ -134,6 +152,7 @@ function Doc(source, onEnd) {
   var ready = source.ready
     .then(function(result) {info = result})
   var foundText;
+  var highlightOnPage;
   const playbackState = new rxjs.BehaviorSubject("resumed")
 
   this.close = close;
@@ -198,6 +217,7 @@ function Doc(source, onEnd) {
     }
     if (activeSpeech) return;
     activeSpeech = await getSpeech(texts);
+    if (highlightOnPage && source.highlight) activeSpeech.onChunkStart = text => source.highlight(text);
     await wait(playbackState, "resumed")
     activeSpeech.onEnd = function(err) {
       if (err) {
@@ -313,6 +333,7 @@ function Doc(source, onEnd) {
   async function getSpeech(texts) {
     const settings = await getSettings()
     settings.rate = await getSetting("rate" + (settings.voiceName || ""))
+    highlightOnPage = settings.showHighlighting == 3
     var lang = (!info.detectedLang || info.lang && info.lang.startsWith(info.detectedLang)) ? info.lang : info.detectedLang;
     console.log("Declared", info.lang, "- Detected", info.detectedLang, "- Chosen", lang)
     var options = {

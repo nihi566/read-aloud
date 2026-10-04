@@ -68,6 +68,9 @@
   "options_highlighting_window": {
     "message": "Show in a separate window"
   },
+  "options_highlighting_page": {
+    "message": "Show on the page"
+  },
   "options_audio_playback": {
     "message": "Audio Playback"
   },

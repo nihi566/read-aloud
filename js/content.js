@@ -4,7 +4,10 @@
     getRequireJs: getRequireJs,
     getDocumentInfo: getInfo,
     getCurrentIndex: getCurrentIndex,
-    getTexts: getTexts
+    getTexts: getTexts,
+    //pageHighlighter is missing on pages injected by an older version of the extension
+    highlightText: text => typeof pageHighlighter != "undefined" && pageHighlighter.highlight(text),
+    clearHighlight: () => typeof pageHighlighter != "undefined" && pageHighlighter.reset()
   })
 
   function getInfo() {
