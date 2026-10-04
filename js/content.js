@@ -106,6 +106,11 @@
     return navigator.userActivation && navigator.userActivation.hasBeenActive
   }
 
+  //Alt+click on the page while "Show on the page" is highlighting: read again from that sentence
+  if (typeof pageHighlighter != "undefined") {
+    pageHighlighter.onSeek = around => sendToPlayer({method: "seekToPageText", args: [around]}).catch(console.error)
+  }
+
   async function sendToPlayer(message) {
     message.dest = "player"
     const result = await brapi.runtime.sendMessage(message)

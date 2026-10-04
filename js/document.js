@@ -165,6 +165,7 @@ function Doc(source, onEnd) {
   this.forward = forward;
   this.rewind = rewind;
   this.seek = seek;
+  this.seekToPageText = seekToPageText;
   this.restartCurrent = restartCurrent;
 
   //method close
@@ -429,5 +430,15 @@ function Doc(source, onEnd) {
   function seek(n) {
     if (activeSpeech) return activeSpeech.seek(n);
     else return Promise.reject(new Error("Can't seek, not active"));
+  }
+
+  //method seekToPageText（改造版）: Alt+click on the page with "Show on the page" highlighting.
+  //around is the text around the clicked point; reads from the sentence that contains it, if it is being read
+  function seekToPageText(around) {
+    if (!activeSpeech) return false
+    const index = findClickedSentence(activeSpeech.getInfo().texts, around)
+    if (index < 0) return false
+    activeSpeech.seek(index)
+    return true
   }
 }
