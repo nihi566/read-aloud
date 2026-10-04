@@ -1,9 +1,9 @@
 {
   "extension_name": {
-    "message": "Read Aloud: テキスト読み上げ音声リーダー"
+    "message": "【改造版】Read Aloud: テキスト読み上げ音声リーダー"
   },
   "extension_short_name": {
-    "message": "読み上げる"
+    "message": "読み上げる（改造版）"
   },
   "extension_description": {
     "message": "ワンクリックで現在のウェブページの記事を読み上げます。 40以上の言語をサポートします。"

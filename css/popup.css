@@ -129,6 +129,17 @@ body:not(.is-popup) #highlight {
 body:not(.is-popup) #toolbar .btn-group.window-size {
   display: none;
 }
+#fork-label {
+  align-self: center;
+  margin-left: .5rem;
+  padding: 0 .4rem;
+  font-size: .75rem;
+  line-height: 1.5;
+  color: #fff;
+  background-color: #d9534f;
+  border-radius: .5rem;
+  white-space: nowrap;
+}
 
 
 #footer {
