@@ -43,23 +43,23 @@ function awsSave() {
       .then(function() {
         $("#aws-progress").hide();
         updateSettings({awsCreds: {accessKeyId: accessKeyId, secretAccessKey: secretAccessKey}});
-        $("#aws-success").text("Amazon Polly voices are enabled.").show();
+        $("#aws-success").text("Amazon Polly の声を有効にしました。").show();
         $("#aws-access-key-id").val(obfuscate(accessKeyId));
         $("#aws-secret-access-key").val(obfuscate(secretAccessKey));
       },
       function(err) {
         $("#aws-progress").hide();
-        $("#aws-error").text("Test failed: " + err.message).show();
+        $("#aws-error").text("接続テストに失敗しました: " + err.message).show();
       })
   }
   else if (!accessKeyId && !secretAccessKey) {
     clearSettings(["awsCreds"])
       .then(function() {
-        $("#aws-success").text("Amazon Polly voices are disabled.").show();
+        $("#aws-success").text("Amazon Polly の声を無効にしました。").show();
       })
   }
   else {
-    $("#aws-error").text("Missing required fields.").show();
+    $("#aws-error").text("必須の項目が入力されていません。").show();
   }
 }
 
@@ -84,21 +84,21 @@ function gcpSave() {
         $("#gcp-progress").hide();
         updateSettings({gcpCreds: {apiKey: apiKey, enableStudio: enableStudio}});
         if (enableStudio) {
-          $("#gcp-success").text("Google Wavenet & Studio voices are enabled.").show();
+          $("#gcp-success").text("Google Wavenet と Google Studio の声を有効にしました。").show();
         } else {
-          $("#gcp-success").text("Google Wavenet voices are enabled.").show();
+          $("#gcp-success").text("Google Wavenet の声を有効にしました。").show();
         }
         $("#gcp-api-key").val(obfuscate(apiKey));
       },
       function(err) {
         $("#gcp-progress").hide();
-        $("#gcp-error").text("Test failed: " + err.message).show();
+        $("#gcp-error").text("接続テストに失敗しました: " + err.message).show();
       })
   }
   else {
     clearSettings(["gcpCreds"])
       .then(function() {
-        $("#gcp-success").text("Google Wavenet voices are disabled.").show();
+        $("#gcp-success").text("Google Wavenet の声を無効にしました。").show();
       })
   }
 }
@@ -118,30 +118,30 @@ function ibmSave() {
       .then(function() {
         $("#ibm-progress").hide();
         updateSettings({ibmCreds: {apiKey: apiKey, url: url}});
-        $("#ibm-success").text("IBM Watson voices are enabled.").show();
+        $("#ibm-success").text("IBM Watson の声を有効にしました。").show();
         $("#ibm-api-key").val(obfuscate(apiKey));
         $("#ibm-url").val(obfuscate(url));
       },
       function(err) {
         $("#ibm-progress").hide();
-        $("#ibm-error").text("Test failed: " + err.message).show();
+        $("#ibm-error").text("接続テストに失敗しました: " + err.message).show();
       })
   }
   else if (!apiKey && !url) {
     clearSettings(["ibmCreds"])
       .then(function() {
-        $("#ibm-success").text("IBM Watson voices are disabled.").show();
+        $("#ibm-success").text("IBM Watson の声を無効にしました。").show();
       })
   }
   else {
-    $("#ibm-error").text("Missing required fields.").show();
+    $("#ibm-error").text("必須の項目が入力されていません。").show();
   }
 }
 
 function testIbm(apiKey, url) {
   return brapi.permissions.request({origins: [url + "/*"]})
     .then(function(granted) {
-      if (!granted) throw new Error("Permission not granted");
+      if (!granted) throw new Error("アクセス権限が許可されませんでした");
     })
     .then(function() {
       return ibmWatsonTtsEngine.fetchVoices(apiKey, url);
@@ -158,11 +158,11 @@ async function azureSave() {
     try {
       await testAzure(region, key)
       await updateSettings({azureCreds: {region, key}})
-      $("#azure-success").text("Azure voices are enabled.").show()
+      $("#azure-success").text("Microsoft Azure の声を有効にしました。").show()
       $("#azure-key").val(obfuscate(key))
     }
     catch (err) {
-      $("#azure-error").text("Test failed: " + err.message).show()
+      $("#azure-error").text("接続テストに失敗しました: " + err.message).show()
     }
     finally {
       $("#azure-progress").hide()
@@ -170,10 +170,10 @@ async function azureSave() {
   }
   else if (!region && !key) {
     await clearSettings(["azureCreds"])
-    $("#azure-success").text("IBM Watson voices are disabled.").show()
+    $("#azure-success").text("Microsoft Azure の声を無効にしました。").show()
   }
   else {
-    $("#azure-error").text("Missing required fields.").show()
+    $("#azure-error").text("必須の項目が入力されていません。").show()
   }
 }
 

@@ -1,37 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Select Languages</title>
+  <title>言語の選択 - Read Aloud</title>
+  <link rel="stylesheet" type="text/css" href="css/noto-sans-jp.css">
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="css/common.css">
+  <link rel="stylesheet" type="text/css" href="css/pages.css">
   <style>
-  h2 {
-    margin-top: 15px;
-    margin-bottom: 20px;
+  #lang-list {
+    margin: 16px 0 0;
+    padding: 6px 0;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  #lang-list:empty {
+    display: none;
+  }
+  #lang-list .form-check {
+    padding: 0;
+    margin: 0;
+  }
+  #lang-list .form-check-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+    padding: 7px 18px;
+    font-size: 14.5px;
+    font-weight: 400;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+  }
+  #lang-list .form-check-input {
+    position: static;
+    flex: none;
+    margin: 4px 0 0;
+  }
+  #lang-list > .form-check:not(.voice-list) > .form-check-label:hover {
+    background-color: var(--surface);
+  }
+  #lang-list > .form-check:not(.voice-list) + .form-check:not(.voice-list) > .form-check-label,
+  #lang-list > .voice-list + .form-check > .form-check-label {
+    border-top: 1px solid var(--border);
   }
   .voice-list {
-    display: inline-block;
-    margin: .2em 0 .8em 1em;
-    padding: .5em 1em;
-    background-color: #f6f6f6;
-    color: #454545;
-    border: 1px solid #c5c5c5;
-    border-radius: 5px;
-    white-space: nowrap;
+    margin: 2px 18px 10px 44px !important;
+    padding: 6px 0 !important;
+    background-color: var(--surface);
+    border-radius: 10px;
+  }
+  .voice-list .form-check-label {
+    padding: 4px 14px !important;
+    font-size: 13.5px !important;
+    color: var(--text);
+  }
+  .voice-list .form-check-label.d-block {
+    display: flex !important;
   }
   .voice-list input[type=radio] {
-    margin-right: .4em;
+    flex: none;
+    margin-top: 3px;
   }
-  .dark-mode .voice-list {
-    background-color: #333;
-    border: none;
-    box-shadow: 1px 1px black;
-    color: #ddd;
-  }
-  .dark-mode .close {
-    color: white;
+  @media (max-width: 520px) {
+    .voice-list {
+      margin-left: 18px !important;
+    }
   }
   </style>
 
@@ -45,6 +81,7 @@
 <body>
   <div class="container">
     <h2 data-i18n="languages_heading"></h2>
+    <p class="lead-text">読み上げに使う言語にチェックを入れてください。チェックした言語ごとに、使う声を選べます。</p>
     <form>
       <div class="form-group" id="lang-list">
       </div>

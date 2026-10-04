@@ -1,28 +1,22 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Report Issues</title>
+  <title>問題を報告 - Read Aloud</title>
+  <link rel="stylesheet" type="text/css" href="css/noto-sans-jp.css">
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="css/common.css">
+  <link rel="stylesheet" type="text/css" href="css/pages.css">
   <style>
-  h2 {
-    margin-top: 15px;
-    margin-bottom: 20px;
-  }
-  .container {
-    min-width: 400px;
-  }
   .status {
     display: none;
   }
-  button.close {
-    float: right;
-    display: none;
+  form.card {
+    padding: 16px 18px 4px;
   }
-  .dark-mode .close {
-    color: white;
+  .status-group .alert {
+    margin-bottom: 12px;
   }
   </style>
 
@@ -33,27 +27,30 @@
 </head>
 <body>
   <div class="container">
-    <button type="button" class="close" aria-label="Close">
-      <span aria-hidden="true">&times;</span>
-    </button>
-    <h2>Report Issue</h2>
-    <form>
+    <div class="page-header">
+      <button type="button" class="close" aria-label="戻る" title="戻る">
+        <i class="material-icons" aria-hidden="true">arrow_back</i>
+      </button>
+      <h2>問題を報告</h2>
+    </div>
+    <p class="lead-text">うまく読み上げられないページや不具合があれば、内容を書いて送信してください。</p>
+    <form class="card">
       <div class="form-group">
-        <label for="txt-url">I was reading this URL</label>
-        <input id="txt-url" type="text" class="form-control" maxlength="500" />
+        <label for="txt-url">読み上げていたページの URL</label>
+        <input id="txt-url" type="text" class="form-control" maxlength="500" placeholder="https://" />
       </div>
       <div class="form-group">
-        <label for="txt-comment">This issue occurs</label>
-        <textarea id="txt-comment" class="form-control" rows="3" maxlength="1000"></textarea>
+        <label for="txt-comment">どのような問題が起きましたか？</label>
+        <textarea id="txt-comment" class="form-control" rows="4" maxlength="1000" placeholder="例: 2 段落目から先が読み上げられない"></textarea>
         <small class="form-text text-muted">
-          Please include your email if you wish to follow up.
+          返信が必要な場合は、メールアドレスも書き添えてください。
         </small>
       </div>
-      <div class="form-group">
-        <button id="btn-submit" type="button" class="btn btn-primary">Submit</button>
-        <img id="img-spinner" class="status" src="img/loading.gif" />
+      <div class="form-group buttons">
+        <button id="btn-submit" type="button" class="btn btn-primary">送信</button>
+        <div id="img-spinner" class="status spinner" role="status" aria-label="送信中"></div>
       </div>
-      <div class="form-group">
+      <div class="form-group status-group">
         <div id="lbl-status" class="status alert alert-success"></div>
         <div id="lbl-error" class="status alert alert-danger"></div>
       </div>

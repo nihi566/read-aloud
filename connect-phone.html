@@ -1,50 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Connect Phone</title>
+    <title>スマートフォンと接続 - Read Aloud</title>
 
-    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/noto-sans-jp.css">
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/pages.css">
     <style>
-      .container {
-        min-width: 400px;
-        padding-bottom: 15px;
-      }
-      h2 {
-        margin-top: 15px;
-        margin-bottom: 20px;
-      }
-      .spinner {
-        display: inline-block;
-        vertical-align: middle;
-        border: 3px solid #333;
-        border-top: 3px solid rgba(0,0,0,0);
-        border-radius: 50%;
-        box-sizing: border-box;
-        width: 16px;
-        height: 16px;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
       #state-loading, #state-pairing, #state-success, #state-fail {
         display: none;
       }
+      .card {
+        padding: 20px 18px;
+      }
+      #state-loading .spinner {
+        width: 28px;
+        height: 28px;
+        margin: 12px auto;
+        border-width: 3px;
+      }
+      #state-pairing ol {
+        margin: 0 0 16px;
+        padding-left: 1.4em;
+      }
+      #state-pairing li + li {
+        margin-top: 4px;
+      }
+      .nowrap {
+        white-space: nowrap;
+      }
       #pairing-domain {
-        font-weight: bold;
-        color: blue;
+        font-weight: 650;
+        color: var(--accent);
+        overflow-wrap: anywhere;
       }
       #pairing-code {
-        font-size: 2em;
-        font-weight: bold;
-        color: #888;
+        display: block;
+        width: fit-content;
+        margin: 0 auto;
+        padding: 10px 24px;
+        font-size: 34px;
+        font-weight: 700;
+        letter-spacing: .12em;
+        font-variant-numeric: tabular-nums;
+        color: var(--text);
+        background-color: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        user-select: text;
       }
-      .dark-mode .close {
-        color: white;
+      .state-message {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px 10px;
+        font-weight: 600;
+      }
+      .state-message .material-icons {
+        font-size: 24px;
+      }
+      #state-success .material-icons {
+        color: var(--success);
+      }
+      #state-fail .material-icons {
+        color: var(--danger);
+      }
+      .state-message .msg {
+        flex: 1 1 auto;
       }
     </style>
 
@@ -56,24 +81,38 @@
 
   <body>
     <div class="container">
-      <button type="button" class="close" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-      <h2>Use My Phone</h2>
+      <div class="page-header">
+        <button type="button" class="close always" aria-label="戻る" title="戻る">
+          <i class="material-icons" aria-hidden="true">arrow_back</i>
+        </button>
+        <h2>スマートフォンで読み上げる</h2>
+      </div>
+      <p class="lead-text">スマートフォンと接続すると、このパソコンで開いているページをスマートフォンで読み上げられます。</p>
 
-      <div id="state-loading">
-        <div class="spinner"></div>
-      </div>
-      <div id="state-pairing">
-        <p>Open https://<span id="pairing-domain">readaloud.link</span> on your phone and enter this pairing code:</p>
-        <span id="pairing-code"></span>
-      </div>
-      <div id="state-success">
-        Pairing successful.
-      </div>
-      <div id="state-fail">
-        Pairing unsuccessful.
-        <span id="try-again-button" class="link">Try again</span>
+      <div class="card">
+        <div id="state-loading">
+          <div class="spinner" role="status" aria-label="準備中"></div>
+        </div>
+        <div id="state-pairing">
+          <ol>
+            <li>スマートフォンのブラウザーで <span class="nowrap">https://<span id="pairing-domain">readaloud.link</span></span> を開きます。</li>
+            <li>次のペアリングコードを入力します。</li>
+          </ol>
+          <span id="pairing-code"></span>
+        </div>
+        <div id="state-success">
+          <div class="state-message">
+            <i class="material-icons" aria-hidden="true">check_circle</i>
+            <span class="msg">ペアリングが完了しました。</span>
+          </div>
+        </div>
+        <div id="state-fail">
+          <div class="state-message">
+            <i class="material-icons" aria-hidden="true">error</i>
+            <span class="msg">ペアリングできませんでした。</span>
+            <button type="button" id="try-again-button" class="btn btn-outline-primary">もう一度試す</button>
+          </div>
+        </div>
       </div>
     </div>
   </body>

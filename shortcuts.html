@@ -1,43 +1,44 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shortcut Keys</title>
+  <title>ショートカットキー - Read Aloud</title>
+  <link rel="stylesheet" type="text/css" href="css/noto-sans-jp.css">
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="css/common.css">
-  <style>
-  h2 {
-    margin-top: 30px;
-    margin-bottom: 20px;
-  }
-  </style>
+  <link rel="stylesheet" type="text/css" href="css/pages.css">
   <script src="js/rxjs.umd.min.js"></script>
   <script src="js/defaults.js"></script>
 </head>
 <body>
   <div class="container">
-  <h2>
-    Shortcut Keys
-  </h2>
-  <table class="table table-bordered table-striped">
-    <tr>
-      <td>Play/Pause</td>
-      <td>Alt/Option + P</td>
-    </tr>
-    <tr>
-      <td>Stop</td>
-      <td>Alt/Option + O</td>
-    </tr>
-    <tr>
-      <td>Forward</td>
-      <td>Alt/Option + Period</td>
-    </tr>
-    <tr>
-      <td>Rewind</td>
-      <td>Alt/Option + Comma</td>
-    </tr>
-  </table>
+    <h2>ショートカットキー</h2>
+    <p class="lead-text">どのページを開いていても、次のキーで読み上げを操作できます。Mac では <kbd>Alt</kbd> の代わりに <kbd>Option</kbd> を使います。</p>
+    <div class="table-card">
+      <table class="table">
+        <tr>
+          <th scope="col">操作</th>
+          <th scope="col">キー</th>
+        </tr>
+        <tr>
+          <td>再生／一時停止</td>
+          <td><span class="key-combo"><kbd>Alt</kbd>+<kbd>P</kbd></span></td>
+        </tr>
+        <tr>
+          <td>再生／停止</td>
+          <td><span class="key-combo"><kbd>Alt</kbd>+<kbd>O</kbd></span></td>
+        </tr>
+        <tr>
+          <td>次の文へ進む</td>
+          <td><span class="key-combo"><kbd>Alt</kbd>+<kbd>.</kbd><span class="key-note">（ピリオド）</span></span></td>
+        </tr>
+        <tr>
+          <td>前の文へ戻る</td>
+          <td><span class="key-combo"><kbd>Alt</kbd>+<kbd>,</kbd><span class="key-note">（カンマ）</span></span></td>
+        </tr>
+      </table>
+    </div>
   </div>
 </body>
 </html>
