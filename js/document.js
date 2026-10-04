@@ -153,6 +153,7 @@ function Doc(source, onEnd) {
     .then(function(result) {info = result})
   var foundText;
   var highlightOnPage;
+  var lastTexts;
   const playbackState = new rxjs.BehaviorSubject("resumed")
 
   this.close = close;
@@ -164,6 +165,7 @@ function Doc(source, onEnd) {
   this.forward = forward;
   this.rewind = rewind;
   this.seek = seek;
+  this.restartCurrent = restartCurrent;
 
   //method close
   function close() {
@@ -208,7 +210,8 @@ function Doc(source, onEnd) {
     }
   }
 
-  async function read(texts, rewinded) {
+  async function read(texts, rewinded, startIndex) {
+    lastTexts = texts
     texts = texts.map(preprocess)
     if (info.detectedLang == null) {
       const lang = await detectLanguage(texts)
@@ -233,6 +236,7 @@ function Doc(source, onEnd) {
       }
     };
     if (rewinded) await activeSpeech.gotoEnd();
+    if (startIndex) return activeSpeech.seek(Math.min(startIndex, activeSpeech.getInfo().texts.length - 1));
     return activeSpeech.play();
   }
 
@@ -403,6 +407,19 @@ function Doc(source, onEnd) {
 
   function rewindPage() {
     return stop().then(function() {currentIndex--; readCurrent(true)});
+  }
+
+  //method restartCurrent: read the current part again from the same position with the current settings
+  //(voice, rate), so that changes made while reading take effect right away
+  async function restartCurrent() {
+    await ready
+    const speech = activeSpeech
+    if (!speech || !lastTexts) return
+    const index = speech.getInfo().position.index
+    speech.onEnd = null
+    activeSpeech = null
+    speech.stop()
+    return read(lastTexts, false, index)
   }
 
   function seek(n) {

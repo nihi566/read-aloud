@@ -73,7 +73,7 @@ body.is-popup #highlight {
   background-color: #0c4e00;
 }
 body:not(.is-popup) #highlight {
-  height: calc(100vh - 150px);
+  height: calc(100vh - 190px);
 }
 
 
@@ -185,4 +185,54 @@ body:not(.is-popup) #toolbar .btn-group.window-size {
 }
 .google-logo span:nth-child(5) {
   color: #3cba54;
+}
+
+#quick-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .75rem;
+  margin: 0 0 .75rem;
+}
+#quick-controls .btn-group {
+  display: flex;
+  align-items: center;
+}
+#quick-controls .btn {
+  display: flex;
+  align-items: center;
+  padding: .25rem .5rem;
+  font-size: .875rem;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #f8f9fa;
+  border: 1px solid #dae0e5;
+  border-radius: .5rem;
+  cursor: pointer;
+}
+#quick-controls .btn:hover {
+  background-color: #e2e6ea;
+}
+#quick-controls .material-icons {
+  font-size: 1em;
+}
+#rate-value {
+  min-width: 3.5em;
+  text-align: center;
+  font-size: .875rem;
+}
+#quick-voice {
+  max-width: 11rem;
+  padding: .2rem .25rem;
+  font-size: .875rem;
+  border: 1px solid #dae0e5;
+  border-radius: .5rem;
+}
+.dark-mode #quick-controls .btn, .dark-mode #quick-voice {
+  background-color: #3e3e3e;
+  color: #ddd;
+  border-color: #555;
+}
+.dark-mode #rate-value {
+  color: #ddd;
 }

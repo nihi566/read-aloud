@@ -13,6 +13,7 @@
   <script src="js/jquery-3.7.1.min.js"></script>
   <script src="js/defaults.js"></script>
   <script src="js/messaging.js"></script>
+  <script src="js/local-voice-server.js"></script>
   <script src="js/popup.js"></script>
 </head>
 <body>
@@ -26,6 +27,18 @@
     <i class="material-icons button-1" id="btnStop">stop</i>
     <i class="material-icons button-1" id="btnSettings">settings</i>
     <i class="material-icons button-1" id="btnForward">&#xe01f;</i>
+  </div>
+  <div id="quick-controls">
+    <div class="btn-group" title="読み上げの速さ（読み上げ中に変えると、今の文から読み直す）">
+      <button id="decrease-rate" type="button" class="btn btn-sm btn-light" aria-label="遅くする">
+        <i class="material-icons">remove</i>
+      </button>
+      <span id="rate-value"></span>
+      <button id="increase-rate" type="button" class="btn btn-sm btn-light" aria-label="速くする">
+        <i class="material-icons">add</i>
+      </button>
+    </div>
+    <select id="quick-voice" title="声（読み上げ中に変えると、今の文から読み直す）" aria-label="声"></select>
   </div>
   <div id="highlight">
   </div>

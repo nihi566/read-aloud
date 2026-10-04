@@ -19,6 +19,7 @@ var handlers = {
   forward: forward,
   rewind: rewind,
   seek: seek,
+  restartCurrent: () => sendToPlayer({method: "restartCurrent"}),
   reportIssue: reportIssue,
   authWavenet: authWavenet,
   managePiperVoices,

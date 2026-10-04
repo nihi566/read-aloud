@@ -68,6 +68,7 @@ async function init() {
   $("#decrease-window-size").click(changeWindowSize.bind(null, -1));
   $("#increase-window-size").click(changeWindowSize.bind(null, +1));
   $("#toggle-dark-mode").click(toggleDarkMode);
+  initQuickControls();
 
   refreshSize();
   checkAnnouncements();
@@ -407,4 +408,74 @@ function showAnnouncement(ann) {
 function toggleDarkMode() {
   const darkMode = document.body.classList.toggle("dark-mode")
   updateSettings({darkMode})
+}
+
+
+
+//quick controls（改造版）: change the rate and the voice from the popup; while reading, the current
+//sentence is read again with the new setting (Doc.restartCurrent)
+const QUICK_RATE_STEP = 0.1
+const QUICK_RATE_MIN = 0.5
+const QUICK_RATE_MAX = 3
+const QUICK_VOICE_LABELS = {
+  "sbv2-amitaro": "あみたろ",
+  "sbv2-koharune-ami": "小春音アミ",
+  "piper-female": "Piper 女性",
+  "piper-male": "Piper 男性",
+}
+
+function initQuickControls() {
+  $("#decrease-rate").click(() => changeRate(-QUICK_RATE_STEP).catch(handleError))
+  $("#increase-rate").click(() => changeRate(+QUICK_RATE_STEP).catch(handleError))
+  $("#quick-voice").change(function() {
+    changeVoice($(this).val()).catch(handleError)
+  })
+
+  observeSetting("voiceName")
+    .pipe(rxjs.switchMap(voiceName => observeSetting("rate" + (voiceName || ""))))
+    .subscribe(rate => $("#rate-value").text((rate || defaults.rate).toFixed(1) + "x"))
+
+  rxjs.combineLatest([observeSetting("voiceName"), rxjs.defer(getQuickVoices)])
+    .subscribe(([voiceName, voices]) => {
+      const names = voices.includes(voiceName) || !voiceName ? voices : [voiceName, ...voices]
+      const select = $("#quick-voice").empty()
+      if (!voiceName) $("<option>").val("").text("自動で選ぶ").appendTo(select)
+      for (const name of names) {
+        const id = name.replace(/^OpenAI /, "")
+        $("<option>").val(name).text(QUICK_VOICE_LABELS[id] || name).appendTo(select)
+      }
+      select.val(voiceName || "")
+    })
+}
+
+async function getQuickVoices() {
+  try {
+    const openaiCreds = await getSetting("openaiCreds")
+    const list = await getOpenaiVoiceList(openaiCreds, [])
+    return list.map(x => "OpenAI " + x.voice)
+  }
+  catch (err) {
+    console.error(err)
+    return []
+  }
+}
+
+async function changeRate(delta) {
+  const key = "rate" + ((await getSetting("voiceName")) || "")
+  const current = (await getSetting(key)) || defaults.rate
+  const next = Math.min(QUICK_RATE_MAX, Math.max(QUICK_RATE_MIN, Math.round((current + delta) * 10) / 10))
+  if (next == current) return
+  await updateSetting(key, next)
+  await restartIfReading()
+}
+
+async function changeVoice(voiceName) {
+  if (!voiceName) return
+  await updateSettings({voiceName})
+  await restartIfReading()
+}
+
+async function restartIfReading() {
+  const {state} = await bgPageInvoke("getPlaybackState")
+  if (state != "STOPPED") await bgPageInvoke("restartCurrent")
 }

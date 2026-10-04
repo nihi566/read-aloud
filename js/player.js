@@ -191,6 +191,7 @@ var messageHandlers = {
   forward: forward,
   rewind: rewind,
   seek: seek,
+  restartCurrent: () => activeDoc ? activeDoc.restartCurrent() : Promise.resolve(),
   close: closePlayer,
   shouldPlaySilence: shouldPlaySilence.bind({}),
   startPairing: () => phoneTtsEngine.startPairing(),
