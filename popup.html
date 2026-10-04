@@ -34,29 +34,29 @@
   <div id="local-voice-loading" role="status">声を読み込み中です（しばらく使わなかった後の最初の 1 回は 5〜10 秒かかります）</div>
 
   <div id="buttons">
-    <button id="btnRewind" type="button" class="transport-btn" title="前の文へ" aria-label="前の文へ">
+    <button id="btnRewind" type="button" class="transport-btn" title="前の文へ（←）" aria-label="前の文へ">
       <i class="material-icons">skip_previous</i>
     </button>
     <div id="primary-slot">
       <span id="imgLoading" class="spinner" role="status" aria-label="読み込み中"></span>
-      <button id="btnPlay" type="button" class="primary-btn" title="読み上げる" aria-label="読み上げる">
+      <button id="btnPlay" type="button" class="primary-btn" title="読み上げる（Space）" aria-label="読み上げる">
         <i class="material-icons">play_arrow</i>
       </button>
-      <button id="btnPause" type="button" class="primary-btn" title="一時停止" aria-label="一時停止">
+      <button id="btnPause" type="button" class="primary-btn" title="一時停止（Space）" aria-label="一時停止">
         <i class="material-icons">pause</i>
       </button>
     </div>
     <button id="btnStop" type="button" class="transport-btn" title="停止" aria-label="停止">
       <i class="material-icons">stop</i>
     </button>
-    <button id="btnForward" type="button" class="transport-btn" title="次の文へ" aria-label="次の文へ">
+    <button id="btnForward" type="button" class="transport-btn" title="次の文へ（→）" aria-label="次の文へ">
       <i class="material-icons">skip_next</i>
     </button>
   </div>
   <div id="play-hint">このページを読み上げる</div>
 
   <div id="quick-controls">
-    <div class="stepper" title="読み上げの速さ（読み上げ中に変えると、今の文から読み直す）">
+    <div class="stepper" title="読み上げの速さ（↑↓ キーでも変えられる。読み上げ中に変えると、今の文から読み直す）">
       <button id="decrease-rate" type="button" class="stepper-btn" aria-label="遅くする">
         <i class="material-icons">remove</i>
       </button>

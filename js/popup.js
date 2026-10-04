@@ -69,6 +69,7 @@ async function init() {
   $("#increase-window-size").click(changeWindowSize.bind(null, +1));
   $("#toggle-dark-mode").click(toggleDarkMode);
   initQuickControls();
+  initKeyboardShortcuts();
 
   refreshSize();
   checkAnnouncements();
@@ -495,4 +496,38 @@ async function changeVoice(voiceName) {
 async function restartIfReading() {
   const {state} = await bgPageInvoke("getPlaybackState")
   if (state != "STOPPED") await bgPageInvoke("restartCurrent")
+}
+
+
+
+//keyboard（改造版）: Space = play/pause, ←/→ = previous/next sentence, ↑/↓ = faster/slower.
+//Keys typed into a select or an input keep their usual meaning
+function initKeyboardShortcuts() {
+  $(document).on("keydown", function(e) {
+    if (e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return
+    if ($(e.target).is("input, select, textarea, [contenteditable]")) return
+    const visible = sel => $(sel).is(":visible")
+    switch (e.key) {
+      case " ":
+        if ($(e.target).is("button")) return
+        if (visible("#btnPause")) $("#btnPause").click()
+        else if (visible("#btnPlay")) $("#btnPlay").click()
+        break
+      case "ArrowLeft":
+        if (visible("#btnRewind")) $("#btnRewind").click()
+        break
+      case "ArrowRight":
+        if (visible("#btnForward")) $("#btnForward").click()
+        break
+      case "ArrowUp":
+        $("#increase-rate").click()
+        break
+      case "ArrowDown":
+        $("#decrease-rate").click()
+        break
+      default:
+        return
+    }
+    e.preventDefault()
+  })
 }
