@@ -85,6 +85,7 @@ function handleError(err) {
   if (!err) return;
   if (err.name == "CancellationException") return;
   $("#status").removeClass("is-info");
+  setTimeout(fitPanel);
 
   if (/^{/.test(err.message)) {
     var errInfo = JSON.parse(err.message);
@@ -202,6 +203,7 @@ function updateLocalVoiceLoading(loadingSpeech) {
     if (localVoiceLoadingCheck == check) {
       $("#local-voice-loading").toggle(loading)
       $("body").toggleClass("voice-loading", loading)
+      fitPanel()
     }
   }, console.error)
 }
@@ -375,7 +377,7 @@ function refreshSize() {
           width: isMobileOS() ? "100%" : windowSize[0],
         }).data("targetHeight", windowSize[1])
         //keep the popup as wide in every state, so it doesn't jump when reading starts
-        if (!isMobileOS()) $("body").css("min-width", windowSize[0] + 28)
+        if (!isMobileOS()) $("body").css("min-width", windowSize[0])
         fitPanel()
       }
       scrollToCurrent(true)
@@ -436,6 +438,7 @@ function checkAnnouncements() {
 function showAnnouncement(ann) {
   var html = escapeHtml(ann.text).replace(/\[(.*?)\]/g, "<a target='_blank' href='" + ann.link + "'>$1</a>").replace(/\n/g, "<br/>");
   $("#footer").html(html).addClass("announcement");
+  fitPanel();
   if (ann.disableIfClick)
     $("#footer a").click(function() {
       ann.disabled = true;
@@ -465,7 +468,7 @@ function initQuickControls() {
 
   observeSetting("voiceName")
     .pipe(rxjs.switchMap(voiceName => observeSetting("rate" + (voiceName || ""))))
-    .subscribe(rate => $("#rate-value").text((rate || defaults.rate).toFixed(1) + "x"))
+    .subscribe(rate => $("#rate-value").text(formatRate(rate || defaults.rate)))
 
   rxjs.combineLatest([observeSetting("voiceName"), rxjs.defer(getQuickVoices)])
     .subscribe(([voiceName, voices]) => {
@@ -533,10 +536,10 @@ function initKeyboardShortcuts() {
         if (visible("#btnForward")) $("#btnForward").click()
         break
       case "ArrowUp":
-        $("#increase-rate").click()
-        break
       case "ArrowDown":
-        $("#decrease-rate").click()
+        //arrow keys scroll the reading panel when it has the focus
+        if ($(e.target).closest("#highlight").length) return
+        $(e.key == "ArrowUp" ? "#increase-rate" : "#decrease-rate").click()
         break
       default:
         return
@@ -569,8 +572,11 @@ var lastUserScroll = 0
 
 function initFollowCurrent() {
   $("#highlight")
-    .on("wheel touchmove mousedown", () => lastUserScroll = Date.now())
+    .on("wheel touchmove mousedown keydown", () => lastUserScroll = Date.now())
     .on("scroll", throttle(updateJumpButton))
+  //text reflows (fonts loading, size changes): keep the current sentence in view
+  if (window.ResizeObserver) new ResizeObserver(throttle(() => scrollToCurrent())).observe($("#highlight").get(0))
+  if (document.fonts) document.fonts.ready.then(() => scrollToCurrent())
   $("#jump-current").click(function() {
     lastUserScroll = 0
     scrollToCurrent(true)
@@ -594,6 +600,7 @@ function updateJumpButton() {
   if (panel.is(":visible") && active.length) {
     const top = active.offset().top - panel.offset().top
     away = top + active.outerHeight() < 0 || top > panel.innerHeight()
+    $("#jump-current .material-icons").text(top < 0 ? "arrow_upward" : "arrow_downward")
   }
   $("#jump-current").toggleClass("visible", away)
 }
@@ -604,4 +611,10 @@ function throttle(fn) {
     if (timer) return
     timer = setTimeout(() => { timer = null; fn() }, 100)
   }
+}
+
+//1 → "1.0x", 1.1 → "1.1x", 1.12 → "1.12x"
+function formatRate(rate) {
+  const text = String(Number(rate.toFixed(2)))
+  return (text.includes(".") ? text : text + ".0") + "x"
 }

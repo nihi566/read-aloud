@@ -237,5 +237,8 @@
   },
   "advanced_fix_bt_silence_gap": {
     "message": "Fix missing first few words of each paragraph when using Bluetooth headset"
+  },
+  "advanced_word_replacements_saved_with_errors": {
+    "message": "Saved (lines with errors are ignored)"
   }
 }

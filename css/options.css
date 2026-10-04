@@ -51,6 +51,10 @@ body, body.dark-mode {
   background-color: var(--bg);
 }
 
+/* opened from the popup: Chrome sizes the popup to the page, so give it a width */
+body.in-popup {
+  width: 460px;
+}
 .container-fluid {
   max-width: 760px;
   margin: 0 auto;
@@ -459,28 +463,22 @@ input[type=checkbox] + label {
 .slider .knob:hover, .slider .knob.dragging {
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 20%, transparent);
 }
-/* value bubble above the knob */
-.slider .knob[data-value]::after {
-  content: attr(data-value);
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 8px);
-  padding: 2px 8px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.5;
-  white-space: nowrap;
-  color: var(--bg);
-  background-color: var(--text);
-  border-radius: 6px;
-  pointer-events: none;
-  opacity: 0;
-  transform: translate(-50%, 4px);
-  transition: opacity .15s, transform .15s;
+/* current value at the right end of the slider */
+.slider:has(.slider-value) {
+  margin-right: 64px;
 }
-.slider .knob:hover::after, .slider .knob.dragging::after, .slider .knob:focus-visible::after {
-  opacity: 1;
-  transform: translate(-50%, 0);
+.slider-value {
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 46px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 #account-info {

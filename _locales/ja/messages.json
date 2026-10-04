@@ -252,5 +252,8 @@
         "example": "2"
       }
     }
+  },
+  "advanced_word_replacements_saved_with_errors": {
+    "message": "保存しました（エラーの行は無視されます）"
   }
 }

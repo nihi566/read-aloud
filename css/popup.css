@@ -180,6 +180,7 @@ body.voice-loading #status.is-info {
   gap: 12px;
   margin: 16px 0 14px;
 }
+#buttons > * { grid-row: 1; }
 #btnRewind { grid-column: 2; }
 #primary-slot { grid-column: 3; }
 #btnForward { grid-column: 4; }
@@ -205,6 +206,9 @@ body.voice-loading #status.is-info {
   box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 40%, transparent);
   cursor: pointer;
   transition: background-color .15s, transform .1s;
+}
+.primary-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--accent);
 }
 .primary-btn:hover {
   background-color: var(--accent-hover);
@@ -350,11 +354,11 @@ body.voice-loading #status.is-info {
   font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
-  color: var(--accent-text);
-  background-color: var(--accent);
+  color: var(--bg);
+  background-color: var(--text);
   border: none;
   border-radius: 999px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
@@ -392,6 +396,9 @@ body.is-popup #highlight {
 #highlight span:hover {
   background-color: color-mix(in srgb, var(--mark) 70%, transparent);
   cursor: pointer;
+}
+.dark-mode #highlight span:not(.active):hover {
+  background-color: var(--surface-hover);
 }
 #highlight span.active {
   background-color: var(--mark);
@@ -433,7 +440,7 @@ body:not(.is-popup) {
 /* toolbar */
 #toolbar {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
   margin-top: 8px;
 }
 #toolbar .btn-group {
@@ -461,7 +468,22 @@ body:not(.is-popup) {
 #toolbar .material-icons {
   font-size: 18px;
 }
+#keys-help {
+  align-self: center;
+  margin-left: 8px;
+  font-size: 18px;
+  color: var(--muted);
+  opacity: .7;
+  cursor: help;
+  border-radius: 4px;
+}
+#keys-help:hover, #keys-help:focus-visible {
+  opacity: 1;
+  outline: none;
+  box-shadow: var(--focus);
+}
 #progress {
+  margin: 0 auto;
   align-self: center;
   font-size: 12px;
   color: var(--muted);

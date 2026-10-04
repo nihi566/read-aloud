@@ -14,6 +14,8 @@
   //i18n
   domReadyPromise
     .then(setI18nText)
+  domReadyPromise
+    .then(() => $("body").toggleClass("in-popup", queryString.referer == "popup.html"))
 
 
 
@@ -122,7 +124,10 @@
     .then(() => {
       const slider = createSlider($("#rate").get(0), {
           label: brapi.i18n.getMessage("options_rate_label"),
-          format: value => Math.pow($("#rate").data("pow"), value).toFixed(2).replace(/0$/, "") + "x",
+          format: value => {
+            const text = String(Number(Math.pow($("#rate").data("pow"), value).toFixed(2)))
+            return (text.includes(".") ? text : text + ".0") + "x"
+          },
           onChange(value) {
             const rate = Math.pow($("#rate").data("pow"), value)
             updateSetting("rate" + $("#voices").val(), Number(rate.toFixed(3)))
@@ -526,6 +531,7 @@
     var $track = $("<div class='track'>").appendTo(elem);
     var $knob = $("<div class='knob'>").appendTo($track);
     var currentPos = 0;
+    var $value = format ? $("<span class='slider-value' aria-hidden='true'>").appendTo(elem) : $();
 
     //改造版: the knob can be focused and moved with the arrow keys, and shows its value
     $knob.attr({tabindex: 0, role: "slider", "aria-label": label || ""})
@@ -579,7 +585,8 @@
       $bar.css("width", percent);
       if (format) {
         var text = format(min + pos*(max-min));
-        $knob.attr({"data-value": text, "aria-valuetext": text});
+        $knob.attr("aria-valuetext", text);
+        $value.text(text);
       }
     }
     function calcPosition(e) {
