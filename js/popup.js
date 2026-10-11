@@ -25,19 +25,51 @@ $(function() {
 })
 
 //floating toolbar（改造版）: in the box on the page (js/fab.js) the page sizes the frame to the toolbar, so tell it
-//the size whenever the panel opens or closes, and open the other pages in tabs rather than in the small frame
+//the size whenever the panel opens or closes, and open the other pages in tabs rather than in the small frame.
+//The page tells back which way the panel opens (above the toolbar in the lower half of the page) and how tall it may be.
+const FAB_PANEL_MARGIN = 8
+const FAB_PANEL_MIN_HEIGHT = 160
+
 function initFab() {
   $("body").addClass("is-fab")
   $("a.link-row").attr("target", "_blank")
+  //the room the open panel takes in the popup; none while it is closed or lies over the text
+  const panelSpace = () => {
+    const panel = $("#panel")
+    return panel.is(":visible") && panel.css("position") != "absolute" ? panel.outerHeight(true) : 0
+  }
+  let room = 0
+  const fitToRoom = () => {
+    if (!room) return
+    const rest = document.body.getBoundingClientRect().height - panelSpace()
+    const max = Math.max(FAB_PANEL_MIN_HEIGHT, Math.floor(room - rest - FAB_PANEL_MARGIN))
+    document.body.style.setProperty("--fab-panel-max-height", max + "px")
+  }
   const report = () => {
+    fitToRoom()
     const rect = document.body.getBoundingClientRect()
     window.parent.postMessage({
       type: "read-aloud-fab:size",
       width: rect.width,
       height: rect.height,
+      panel: panelSpace(),
+      panelAbove: $("body").hasClass("fab-opens-up"),
       background: getComputedStyle(document.body).backgroundColor,
     }, "*")
   }
+  window.addEventListener("message", event => {
+    if (event.source != window.parent || !event.data || event.data.type != "read-aloud-fab:layout") return
+    const opensUp = event.data.opensUp === true
+    room = Math.max(0, Number(event.data.room) || 0)
+    //move the panel only when the way changes, since moving it takes the focus away from the controls in it
+    if (opensUp != $("body").hasClass("fab-opens-up")) {
+      $("body").toggleClass("fab-opens-up", opensUp)
+      if (opensUp) $("#panel").insertBefore("#bar-row")
+      else $("#panel").insertAfter("#bar-row")
+    }
+    //moving the panel keeps the size the same, so the observer below doesn't tell the page
+    report()
+  })
   //the page shows the frame only after the first size; tell it now, since Chrome may not lay out a frame it doesn't show
   report()
   new ResizeObserver(report).observe(document.body)

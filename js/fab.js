@@ -20,6 +20,20 @@ function clampFabPosition(pos, box, viewport) {
   }
 }
 
+//the toolbar stays where the user put it, and the panel opens below it in the upper half of the viewport and above it
+//in the lower half, so it doesn't run off the bottom edge. pos is where the box's top is with the panel closed;
+//size.panel is how tall the open panel is in the popup, and size.panelAbove whether the popup has it above the toolbar.
+//room is how tall the popup may grow, so it can fit the panel to it.
+function layoutFab(pos, size, viewport) {
+  const rest = size.height - size.panel
+  const position = clampFabPosition(pos, {width: size.width, height: rest}, viewport)
+  const opensUp = position.top + rest / 2 > viewport.height / 2
+  const room = opensUp ? position.top + rest : viewport.height - position.top
+  const height = Math.max(0, Math.min(size.height, room))
+  const top = size.panelAbove ? Math.max(0, position.top + rest - height) : position.top
+  return {position, opensUp, room, top, height}
+}
+
 if (typeof document != "undefined") toggleFab()
 
 function toggleFab() {
@@ -92,11 +106,16 @@ function toggleFab() {
   const bounds = root.querySelector(".bounds")
   const fab = root.querySelector(".fab")
   const frame = root.querySelector("iframe")
+  const handle = root.querySelector(".handle")
   frame.src = chrome.runtime.getURL("popup.html?isPopup=1&fab=1")
   //in the page before Draggabilly starts, since it reads how the box is positioned
   document.documentElement.appendChild(host)
 
   let position = FAB_DEFAULT_POSITION
+  //what the popup in the frame last reported; height 0 until it has
+  let size = {width: 0, height: 0, panel: 0, panelAbove: false}
+  let current = {top: 0, height: 0}
+  let sentLayout = ""
   const box = () => ({width: fab.offsetWidth, height: fab.offsetHeight})
   const viewport = () => ({width: bounds.clientWidth, height: bounds.clientHeight})
   //Draggabilly listens to touch events alone when the browser has them (PCs with a touch screen), and a mouse can't drag
@@ -128,8 +147,21 @@ function toggleFab() {
   }
   const draggie = new FabDraggabilly(fab, {handle: root.querySelector(".grip"), containment: bounds})
   const place = pos => {
-    position = clampFabPosition(pos, box(), viewport())
-    draggie.setPosition(viewport().width - box().width - position.right, position.top)
+    current = layoutFab(pos, {...size, width: box().width, height: size.height || box().height}, viewport())
+    //keep where the user put it, which the popup's first, unfinished sizes or a smaller window would otherwise move
+    position = pos
+    if (size.height) frame.style.height = current.height + "px"
+    //the grip and the close button stay beside the toolbar when the panel opens above it
+    const above = size.panelAbove ? Math.max(0, current.height - (size.height - size.panel)) : 0
+    handle.style.marginTop = above + "px"
+    draggie.setPosition(viewport().width - box().width - current.position.right, current.top)
+    //tell the popup which way to open the panel and how tall it may grow, once it can hear it. The frame's address
+    //(a dynamic one, as the manifest asks) doesn't carry the extension's own origin the popup has, so send it to any;
+    //nothing in it is secret
+    const layout = {type: FAB_MESSAGE_PREFIX + "layout", opensUp: current.opensUp, room: Math.floor(current.room)}
+    if (!size.height || JSON.stringify(layout) == sentLayout) return
+    sentLayout = JSON.stringify(layout)
+    frame.contentWindow.postMessage(layout, "*")
   }
   const save = () => chrome.storage.local.set({[FAB_POSITION_KEY]: position}).catch(console.error)
 
@@ -137,9 +169,13 @@ function toggleFab() {
   const onMessage = event => {
     if (event.source != frame.contentWindow || !event.data || typeof event.data.type != "string") return
     if (event.data.type == FAB_MESSAGE_PREFIX + "size") {
-      const maxHeight = Math.max(0, window.innerHeight - position.top)
-      frame.style.width = Math.ceil(Number(event.data.width) || 0) + "px"
-      frame.style.height = Math.min(Math.ceil(Number(event.data.height) || 0), maxHeight) + "px"
+      size = {
+        width: Math.ceil(Number(event.data.width) || 0),
+        height: Math.ceil(Number(event.data.height) || 0),
+        panel: Math.ceil(Number(event.data.panel) || 0),
+        panelAbove: event.data.panelAbove === true,
+      }
+      frame.style.width = size.width + "px"
       if (typeof event.data.background == "string") fab.style.background = event.data.background
       place(position)
       setStyle("opacity", "1")
@@ -162,7 +198,9 @@ function toggleFab() {
 
   //Draggabilly moves the box by its left edge; keep the distance from the right edge, so the box stays on the right on resize
   draggie.on("dragEnd", () => {
-    place({right: viewport().width - box().width - draggie.position.x, top: draggie.position.y})
+    //with the panel above the toolbar, the box's top is above where the toolbar stays
+    const top = size.panelAbove ? draggie.position.y + current.height - (size.height - size.panel) : draggie.position.y
+    place({right: viewport().width - box().width - draggie.position.x, top})
     save()
   })
 
