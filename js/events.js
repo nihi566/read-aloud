@@ -25,6 +25,11 @@ var handlers = {
   managePiperVoices,
   manageSupertonicVoices,
   manageNghiTtsVoices,
+  //改造版: the player asks this when it closes, since a closing page can't finish pausing the BGM itself
+  pauseBgm: async () => {
+    //leave a playlist the user plays by hand alone once the BGM is off
+    if (await getSetting("bgmEnabled")) await bgm.pause()
+  },
 }
 
 registerMessageListener("serviceWorker", handlers)

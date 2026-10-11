@@ -338,6 +338,111 @@ body.voice-loading #status.is-info {
   color: var(--text);
 }
 
+/* BGM（改造版） */
+#bgm-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: -4px 0 12px;
+  font-size: 13px;
+}
+.bgm-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 12px 0 10px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--muted);
+  background-color: var(--surface);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.bgm-toggle:hover {
+  background-color: var(--surface-hover);
+}
+.bgm-toggle[aria-pressed="true"] {
+  color: var(--accent-text);
+  background-color: var(--accent);
+}
+.bgm-toggle[aria-pressed="true"]:hover {
+  background-color: var(--accent-hover);
+}
+.bgm-toggle .material-icons, #bgm-controls .volume .material-icons {
+  font-size: 18px;
+}
+#bgm-controls .volume {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 10px;
+  color: var(--muted);
+  background-color: var(--surface);
+  border-radius: 999px;
+}
+#bgm-controls .volume:focus-within {
+  box-shadow: var(--focus);
+}
+#bgm-controls input[type="range"] {
+  width: 84px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+#bgm-controls input[type="range"]:focus-visible {
+  box-shadow: none;
+}
+#bgm-edit {
+  background-color: var(--surface);
+}
+#bgm-setup, #bgm-notice {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 12px;
+  font-size: 13px;
+}
+#bgm-setup.visible, #bgm-notice.visible {
+  display: flex;
+}
+#bgm-url {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  font: inherit;
+  color: var(--text);
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+#bgm-notice {
+  padding: 8px 12px;
+  line-height: 1.45;
+  color: var(--info-text);
+  background-color: var(--info-bg);
+  border-radius: 10px;
+}
+.bgm-btn {
+  flex: none;
+  height: 32px;
+  padding: 0 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent-text);
+  background-color: var(--accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.bgm-btn:hover {
+  background-color: var(--accent-hover);
+}
+
 
 /* highlighting */
 #highlight-wrap {

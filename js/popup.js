@@ -69,6 +69,7 @@ async function init() {
   $("#increase-window-size").click(changeWindowSize.bind(null, +1));
   $("#toggle-dark-mode").click(toggleDarkMode);
   initQuickControls();
+  initBgmControls();
   initKeyboardShortcuts();
   initFollowCurrent();
 
@@ -512,6 +513,79 @@ async function changeVoice(voiceName) {
 async function restartIfReading() {
   const {state} = await bgPageInvoke("getPlaybackState")
   if (state != "STOPPED") await bgPageInvoke("restartCurrent")
+}
+
+
+
+//BGM（改造版）: turn a YouTube Music playlist on/off and set the voice and BGM volumes. While it is on,
+//the player starts and stops the BGM with the reading (js/player.js)
+function initBgmControls() {
+  $("#bgm-toggle").click(onBgmToggle)
+  $("#bgm-edit").click(() => showBgmSetup(true))
+  $("#bgm-setup").submit(function(e) {
+    e.preventDefault()
+    saveBgmPlaylist().catch(handleError)
+  })
+  $("#bgm-show-tab").click(() => bgm.showTab().catch(handleError))
+  $("#bgm-volume").on("input", throttle(() => bgm.setVolume($("#bgm-volume").val()).catch(handleError)))
+  $("#bgm-volume").on("change", () => bgm.setVolume($("#bgm-volume").val()).catch(handleError))
+  $("#voice-volume").on("change", function() {
+    updateSettings({volume: Number($(this).val()) / 100})
+      .then(restartIfReading)
+      .catch(handleError)
+  })
+
+  observeSetting("bgmEnabled").subscribe(enabled => $("#bgm-toggle").attr("aria-pressed", String(!!enabled)))
+  observeSetting("bgmVolume").subscribe(volume => $("#bgm-volume").val(volume != null ? volume : BGM_DEFAULT_VOLUME))
+  observeSetting("volume").subscribe(volume => $("#voice-volume").val(Math.round((volume || defaults.volume) * 100)))
+  //set by js/bgm.js when the browser blocked the autoplay, whether the popup or the player started it
+  rxjs.combineLatest([observeSetting("bgmEnabled"), observeSetting("bgmBlocked")])
+    .subscribe(([enabled, blocked]) => {
+      $("#bgm-notice").toggleClass("visible", !!(enabled && blocked))
+      fitPanel()
+    })
+}
+
+function onBgmToggle() {
+  $("#status").hide()
+  if ($("#bgm-toggle").attr("aria-pressed") == "true") {
+    setBgmEnabled(false).catch(handleError)
+    return
+  }
+  //ask for the permission right in the click: the browser only asks while handling the user's click
+  brapi.permissions.request({origins: [BGM_ORIGIN]})
+    .then(async granted => {
+      if (!granted) throw new Error("music.youtube.com を操作する許可が無いため、BGM を流せません")
+      if (parseBgmPlaylistId(await getSetting("bgmPlaylistUrl"))) await setBgmEnabled(true)
+      else showBgmSetup(true)
+    })
+    .catch(handleError)
+}
+
+async function saveBgmPlaylist() {
+  $("#status").hide()
+  await bgm.setPlaylistUrl($("#bgm-url").val())
+  showBgmSetup(false)
+  //turn it on too, unless the permission is still missing (asked for when the BGM button is pressed)
+  if ($("#bgm-toggle").attr("aria-pressed") != "true" && await brapi.permissions.contains({origins: [BGM_ORIGIN]}))
+    await setBgmEnabled(true)
+}
+
+async function setBgmEnabled(enabled) {
+  await updateSettings({bgmEnabled: enabled})
+  if (!enabled) return bgm.pause()
+  const {state} = await bgPageInvoke("getPlaybackState")
+  if (isBgmReadingState(state)) await bgm.play({shouldContinue: () => getSetting("bgmEnabled")})
+}
+
+function showBgmSetup(visible) {
+  $("#bgm-setup").toggleClass("visible", visible)
+  if (visible) {
+    getSetting("bgmPlaylistUrl")
+      .then(url => $("#bgm-url").val(url || "").focus())
+      .catch(console.error)
+  }
+  fitPanel()
 }
 
 

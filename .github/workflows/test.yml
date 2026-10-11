@@ -1,0 +1,22 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches: [ja-sentence-highlight]
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # test/sentence-chunks.test.mjs compares with the upstream commit (git show b590ee6:...)
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test "test/*.test.mjs"
