@@ -204,6 +204,13 @@ button:focus-visible, select:focus-visible, a:focus-visible, input:focus-visible
   box-shadow: var(--shadow);
   font-size: 14px;
 }
+/* in the box on the page, the panel fits the room the page has for it and opens above the toolbar near the bottom */
+body.is-fab #panel {
+  max-height: min(520px, var(--fab-panel-max-height, 520px));
+}
+body.fab-opens-up #panel {
+  margin: 0 0 8px auto;
+}
 .panel-label {
   display: flex;
   align-items: center;
