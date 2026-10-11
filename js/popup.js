@@ -527,6 +527,7 @@ function initBgmControls() {
     saveBgmPlaylist().catch(handleError)
   })
   $("#bgm-show-tab").click(() => bgm.showTab().catch(handleError))
+  $("#bgm-next").click(onBgmNext)
   $("#bgm-volume").on("input", throttle(() => bgm.setVolume($("#bgm-volume").val()).catch(handleError)))
   $("#bgm-volume").on("change", () => bgm.setVolume($("#bgm-volume").val()).catch(handleError))
   $("#voice-volume").on("change", function() {
@@ -543,6 +544,48 @@ function initBgmControls() {
     .subscribe(([enabled, blocked]) => {
       $("#bgm-notice").toggleClass("visible", !!(enabled && blocked))
       fitPanel()
+    })
+  refreshBgmNowPlaying()
+  setInterval(refreshBgmNowPlaying, BGM_TITLE_POLL_MS)
+}
+
+//the song title, and the next button, while the BGM is playing (the BGM tab is asked every few seconds)
+const BGM_TITLE_POLL_MS = 2000
+var bgmTitleBusy = false
+
+async function refreshBgmNowPlaying() {
+  if (bgmTitleBusy) return
+  bgmTitleBusy = true
+  try {
+    const title = await getSetting("bgmEnabled") ? await bgm.nowPlaying() : null
+    showBgmNowPlaying(title)
+  }
+  catch (err) {
+    console.error("BGM", err)
+  }
+  finally {
+    bgmTitleBusy = false
+  }
+}
+
+function showBgmNowPlaying(title) {
+  const visible = title != null
+  if ($("#bgm-now").hasClass("visible") != visible || $("#bgm-title").text() != (title || "")) {
+    $("#bgm-title").text(title || "")
+    $("#bgm-now").attr("title", title || "").toggleClass("visible", visible)
+    fitPanel()
+  }
+  $("#bgm-next").prop("disabled", !visible)
+}
+
+function onBgmNext() {
+  $("#status").hide()
+  $("#bgm-next").prop("disabled", true)
+  bgm.next()
+    .then(refreshBgmNowPlaying)
+    .catch(err => {
+      $("#bgm-next").prop("disabled", !$("#bgm-now").hasClass("visible"))
+      handleError(err)
     })
 }
 
