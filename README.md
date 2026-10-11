@@ -40,6 +40,17 @@
 
 <hr />
 
+## 改造版（ja-sentence-highlight ブランチ）の使い方
+
+このブランチは、日本語を 1 文ずつ読んで色を付ける改造版です。アイコンを押すとページの上に浮かぶ操作パネル、速度と声のパネル、BGM（YouTube Music）、キー操作など、ここから下の本家の説明（Usage / Customization）とは画面と操作が違います。
+
+使い方・入れ方・戻し方は、音声サーバー側の README にまとめています。
+
+- [改造版の操作（ツールバー・浮かぶ操作パネル・BGM・キー操作）](https://github.com/nihi566/read-aloud-piper-ja#改造版の操作)
+- [改造版に入れ替える](https://github.com/nihi566/read-aloud-piper-ja#改造版に入れ替える)
+
+<hr />
+
 ## Reviews
 >First impressions are super. Natural flowing voice and very helpful for multitasking and also giving my eyes a rest. 
 
