@@ -105,7 +105,7 @@ const POPUP_PAGE = "popup.html?isPopup=1"
 
 brapi.action.onClicked.addListener(async function(tab) {
   try {
-    await brapi.scripting.executeScript({target: {tabId: tab.id}, files: ["js/fab.js"]})
+    await brapi.scripting.executeScript({target: {tabId: tab.id}, files: ["js/draggabilly.pkgd.min.js", "js/fab.js"]})
   }
   catch (err) {
     console.info("Showing the popup, since the page takes no scripts:", err.message)

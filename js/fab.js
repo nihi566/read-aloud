@@ -1,11 +1,13 @@
 //floating toolbar（改造版）: the toolbar button puts the popup on the page as a box the user can drag anywhere,
 //since the browser always opens the real popup under the toolbar button. Injected by events.js on every click;
 //a second click takes the box away again. The box keeps its distance from the top right corner in storage.
+//Dragging is done by Draggabilly (js/draggabilly.pkgd.min.js), which events.js injects just before this file.
 
 var FAB_HOST_ID = "read-aloud-fab-host"
 var FAB_POSITION_KEY = "fabPosition"
 var FAB_DEFAULT_POSITION = {right: 16, top: 16}
 var FAB_MESSAGE_PREFIX = "read-aloud-fab:"
+var FAB_POINTER_EVENTS = ["pointermove", "pointerup", "pointercancel"]
 //kept in the extension's own world of the page, out of the page's reach, so the page can neither fake nor hide the box
 var closeOpenFab
 
@@ -30,13 +32,17 @@ function toggleFab() {
   host.id = FAB_HOST_ID
   //important inline styles win over the page's stylesheets, so the page can't make the box see-through to trick clicks
   const setStyle = (name, value) => host.style.setProperty(name, value, "important")
-  host.style.cssText = "all: initial !important; position: fixed !important; z-index: 2147483647 !important;"
+  //the host covers the viewport without taking clicks; the box inside moves within it and takes clicks once shown
+  host.style.cssText = "all: initial !important; position: fixed !important; inset: 0 !important; z-index: 2147483647 !important;"
   setStyle("opacity", "0")
   setStyle("pointer-events", "none")
   const root = host.attachShadow({mode: "closed"})
   root.innerHTML = `
     <style>
+      .bounds { position: absolute; inset: 0; }
       .fab {
+        position: absolute;
+        pointer-events: none;
         display: flex;
         align-items: flex-start;
         border-radius: 28px;
@@ -44,6 +50,7 @@ function toggleFab() {
         box-shadow: 0 6px 20px rgba(15, 23, 42, .22);
         overflow: hidden;
       }
+      .fab.shown { pointer-events: auto; }
       .handle {
         display: flex;
         flex-direction: column;
@@ -63,13 +70,14 @@ function toggleFab() {
       }
       .handle button:hover { background: rgba(127, 127, 127, .15); }
       .handle button:focus-visible { box-shadow: 0 0 0 3px rgba(47, 111, 228, .35); }
-      .grip { cursor: grab; touch-action: none; }
-      .dragging .grip { cursor: grabbing; }
-      .dragging iframe { pointer-events: none; }
+      .grip { cursor: grab; }
+      .is-dragging .grip { cursor: grabbing; }
+      /*the frame would take the pointer moves away from the page while the pointer passes over it*/
+      .is-pointer-down iframe { pointer-events: none; }
       iframe { border: 0; display: block; color-scheme: normal; }
       svg { width: 16px; height: 16px; fill: currentColor; }
     </style>
-    <div class="fab">
+    <div class="bounds"><div class="fab">
       <div class="handle">
         <button class="grip" type="button" title="ドラッグで動かす" aria-label="ドラッグで動かす">
           <svg viewBox="0 0 24 24"><path d="M9 4a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM9 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm-6 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
@@ -79,20 +87,43 @@ function toggleFab() {
         </button>
       </div>
       <iframe title="Read Aloud" allow="autoplay" width="300" height="76"></iframe>
-    </div>
+    </div></div>
   `
+  const bounds = root.querySelector(".bounds")
   const fab = root.querySelector(".fab")
-  const grip = root.querySelector(".grip")
   const frame = root.querySelector("iframe")
   frame.src = chrome.runtime.getURL("popup.html?isPopup=1&fab=1")
+  //in the page before Draggabilly starts, since it reads how the box is positioned
+  document.documentElement.appendChild(host)
 
   let position = FAB_DEFAULT_POSITION
-  const box = () => ({width: host.offsetWidth, height: host.offsetHeight})
-  const viewport = () => ({width: document.documentElement.clientWidth, height: window.innerHeight})
+  const box = () => ({width: fab.offsetWidth, height: fab.offsetHeight})
+  const viewport = () => ({width: bounds.clientWidth, height: bounds.clientHeight})
+  //Draggabilly listens to touch events alone when the browser has them (PCs with a touch screen), and a mouse can't drag
+  //there; listen to pointer events instead, which cover the mouse, pens and fingers. A pointer the browser takes over
+  //(pointercancel) ends the drag like letting go, so the frame takes clicks again
+  class FabDraggabilly extends Draggabilly {
+    _bindHandles(bindMethod, touchAction) {
+      for (const handle of this.handles) {
+        handle[bindMethod]("pointerdown", this)
+        handle[bindMethod]("click", this)
+        handle.style.touchAction = touchAction
+      }
+    }
+    bindActivePointerEvents() {
+      for (const type of FAB_POINTER_EVENTS) window.addEventListener(type, this)
+    }
+    unbindActivePointerEvents() {
+      for (const type of FAB_POINTER_EVENTS) window.removeEventListener(type, this)
+    }
+    pointerCancel(event, pointer) {
+      this.pointerUp(event, pointer)
+    }
+  }
+  const draggie = new FabDraggabilly(fab, {handle: root.querySelector(".grip"), containment: bounds})
   const place = pos => {
     position = clampFabPosition(pos, box(), viewport())
-    setStyle("right", position.right + "px")
-    setStyle("top", position.top + "px")
+    draggie.setPosition(viewport().width - box().width - position.right, position.top)
   }
   const save = () => chrome.storage.local.set({[FAB_POSITION_KEY]: position}).catch(console.error)
 
@@ -106,7 +137,7 @@ function toggleFab() {
       if (typeof event.data.background == "string") fab.style.background = event.data.background
       place(position)
       setStyle("opacity", "1")
-      setStyle("pointer-events", "auto")
+      fab.classList.add("shown")
     }
     else if (event.data.type == FAB_MESSAGE_PREFIX + "close") close()
   }
@@ -114,6 +145,7 @@ function toggleFab() {
   const close = () => {
     window.removeEventListener("message", onMessage)
     window.removeEventListener("resize", onResize)
+    draggie.destroy()
     host.remove()
     closeOpenFab = undefined
   }
@@ -122,26 +154,12 @@ function toggleFab() {
   closeOpenFab = close
   root.querySelector(".close").addEventListener("click", close)
 
-  grip.addEventListener("pointerdown", event => {
-    if (event.button != 0) return
-    event.preventDefault()
-    grip.setPointerCapture(event.pointerId)
-    fab.classList.add("dragging")
-    const start = {x: event.clientX, y: event.clientY, right: position.right, top: position.top}
-    const onMove = e => place({right: start.right - (e.clientX - start.x), top: start.top + (e.clientY - start.y)})
-    const onEnd = () => {
-      grip.removeEventListener("pointermove", onMove)
-      grip.removeEventListener("pointerup", onEnd)
-      grip.removeEventListener("pointercancel", onEnd)
-      fab.classList.remove("dragging")
-      save()
-    }
-    grip.addEventListener("pointermove", onMove)
-    grip.addEventListener("pointerup", onEnd)
-    grip.addEventListener("pointercancel", onEnd)
+  //Draggabilly moves the box by its left edge; keep the distance from the right edge, so the box stays on the right on resize
+  draggie.on("dragEnd", () => {
+    place({right: viewport().width - box().width - draggie.position.x, top: draggie.position.y})
+    save()
   })
 
-  document.documentElement.appendChild(host)
   chrome.storage.local.get(FAB_POSITION_KEY)
     .then(items => place(items[FAB_POSITION_KEY] || FAB_DEFAULT_POSITION))
     .catch(err => {
