@@ -72,7 +72,7 @@ function toggleFab() {
       .handle button:focus-visible { box-shadow: 0 0 0 3px rgba(47, 111, 228, .35); }
       .grip { cursor: grab; }
       .is-dragging .grip { cursor: grabbing; }
-      /*the frame would take the pointer moves away from the page while the pointer passes over it*/
+      /*the frame is a page of the extension, which takes the pointer moves over it even from a captured pointer*/
       .is-pointer-down iframe { pointer-events: none; }
       iframe { border: 0; display: block; color-scheme: normal; }
       svg { width: 16px; height: 16px; fill: currentColor; }
@@ -101,21 +101,27 @@ function toggleFab() {
   const viewport = () => ({width: bounds.clientWidth, height: bounds.clientHeight})
   //Draggabilly listens to touch events alone when the browser has them (PCs with a touch screen), and a mouse can't drag
   //there; listen to pointer events instead, which cover the mouse, pens and fingers. A pointer the browser takes over
-  //(pointercancel) ends the drag like letting go, so the frame takes clicks again
+  //(pointercancel) ends the drag like letting go.
+  //Draggabilly waits for the moves on the window, which misses them while the pointer is over the page's own frames
+  //(ads, embedded videos) or outside the browser, so the box stops and falls behind the pointer; the grip captures
+  //the pointer instead and takes every move until the button is let go
   class FabDraggabilly extends Draggabilly {
     _bindHandles(bindMethod, touchAction) {
       for (const handle of this.handles) {
-        handle[bindMethod]("pointerdown", this)
-        handle[bindMethod]("click", this)
+        for (const type of ["pointerdown", "click", "lostpointercapture", ...FAB_POINTER_EVENTS]) handle[bindMethod](type, this)
         handle.style.touchAction = touchAction
       }
     }
-    bindActivePointerEvents() {
-      for (const type of FAB_POINTER_EVENTS) window.addEventListener(type, this)
+    onpointerdown(event) {
+      if (event.button == 0) event.currentTarget.setPointerCapture(event.pointerId)
+      super.onpointerdown(event)
     }
-    unbindActivePointerEvents() {
-      for (const type of FAB_POINTER_EVENTS) window.removeEventListener(type, this)
+    //the capture can go away without a pointerup reaching the grip; end the drag then, or the box can't be grabbed again
+    onlostpointercapture(event) {
+      if (this.isPointerDown) this.withPointer("pointerCancel", event)
     }
+    bindActivePointerEvents() {}
+    unbindActivePointerEvents() {}
     pointerCancel(event, pointer) {
       this.pointerUp(event, pointer)
     }
