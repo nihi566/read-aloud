@@ -11,93 +11,130 @@
 
   <script src="js/rxjs.umd.min.js"></script>
   <script src="js/jquery-3.7.1.min.js"></script>
+  <script src="js/aws-sdk.js"></script>
   <script src="js/defaults.js"></script>
   <script src="js/messaging.js"></script>
   <script src="js/local-voice-server.js"></script>
+  <script src="js/tts-engines.js"></script>
+  <script src="js/voice-options.js"></script>
   <script src="js/bgm.js"></script>
   <script src="js/popup.js"></script>
 </head>
 <body>
-  <header id="app-bar">
-    <img id="app-icon" src="img/icon-48.png" alt="" />
-    <span id="app-title">Read Aloud</span>
-    <span id="fork-label" title="日本語を 1 文ずつ読む改造版（nihi566/read-aloud の ja-sentence-highlight）">改造版</span>
-    <button id="toggle-dark-mode" type="button" class="icon-btn" title="ダークモード切り替え" aria-label="ダークモード切り替え">
-      <i class="material-icons">dark_mode</i>
-    </button>
-    <button id="btnSettings" type="button" class="icon-btn" title="設定" aria-label="設定">
-      <i class="material-icons">settings</i>
-    </button>
-  </header>
+  <!-- compact toolbar（改造版）: the voice, the speed and the settings open in the panel below, not in another page -->
+  <div id="bar-row">
+    <div id="bar" role="toolbar" aria-label="読み上げ">
+      <button id="btnMain" type="button" class="main-btn" title="読み上げる" aria-label="読み上げる">
+        <i class="material-icons">volume_up</i>
+      </button>
+      <button id="rate-btn" type="button" class="pill-btn" title="速度（↑↓ キーでも変えられる）" aria-label="速度" aria-controls="panel" aria-expanded="false">
+        <span id="rate-value"></span>
+        <i class="material-icons">expand_more</i>
+      </button>
+      <button id="btnPause" type="button" class="round-btn" title="一時停止（Space）" aria-label="一時停止">
+        <i class="material-icons">pause</i>
+      </button>
+      <button id="btnExpand" type="button" class="chevron-btn" title="音声と速度" aria-label="音声と速度" aria-controls="panel" aria-expanded="false">
+        <i class="material-icons">expand_more</i>
+      </button>
+      <button id="btnSettings" type="button" class="round-btn" title="設定" aria-label="設定" aria-controls="panel" aria-expanded="false">
+        <i class="material-icons">settings</i>
+      </button>
+    </div>
+  </div>
+
+  <div id="panel" hidden>
+    <div class="panel-label" id="voice-label">音声</div>
+    <div id="voice-list" role="radiogroup" aria-labelledby="voice-label"></div>
+
+    <hr>
+    <div class="panel-label"><label for="rate-range">速度</label></div>
+    <div class="slider-row">
+      <input id="rate-range" type="range" min="0.5" max="3" step="0.1">
+      <output id="rate-range-value" for="rate-range"></output>
+    </div>
+
+    <hr>
+    <div class="panel-label">BGM</div>
+    <div id="bgm-controls">
+      <button id="bgm-toggle" type="button" class="bgm-toggle" aria-pressed="false" title="BGM（YouTube Music の再生リスト）を読み上げ中に流す">
+        <i class="material-icons">music_note</i><span>BGM</span>
+      </button>
+      <input id="bgm-volume" type="range" min="0" max="100" step="1" aria-label="BGM の音量" title="BGM の音量">
+      <button id="bgm-next" type="button" class="mini-btn" title="BGM を次の曲へ送る" aria-label="BGM を次の曲へ送る" disabled>
+        <i class="material-icons">skip_next</i>
+      </button>
+      <button id="bgm-edit" type="button" class="mini-btn" title="BGM の再生リストを変える" aria-label="BGM の再生リストを変える">
+        <i class="material-icons">playlist_play</i>
+      </button>
+    </div>
+    <div id="bgm-now" role="status" title="BGM で流れている曲">
+      <i class="material-icons">music_note</i><span id="bgm-title"></span>
+    </div>
+    <form id="bgm-setup">
+      <input id="bgm-url" type="url" placeholder="YouTube Music の再生リストの URL" aria-label="YouTube Music の再生リストの URL">
+      <button id="bgm-save" type="submit" class="bgm-btn">保存</button>
+    </form>
+
+    <div id="more-settings" hidden>
+      <div class="panel-label"><label for="pitch-range">声の高さ</label></div>
+      <div class="slider-row">
+        <input id="pitch-range" type="range" min="0" max="2" step="0.05">
+        <output id="pitch-range-value" for="pitch-range"></output>
+      </div>
+      <div class="panel-label"><label for="volume-range">音量</label></div>
+      <div class="slider-row">
+        <input id="volume-range" type="range" min="0.2" max="1" step="0.02">
+        <output id="volume-range-value" for="volume-range"></output>
+      </div>
+
+      <hr>
+      <div class="panel-label">
+        <label for="all-voices">ほかの声から選ぶ</label>
+        <button id="languages-edit-button" type="button" class="mini-btn" title="声の言語を選ぶ" aria-label="声の言語を選ぶ">
+          <i class="material-icons">filter_alt</i>
+        </button>
+      </div>
+      <div class="field-row">
+        <select id="all-voices" class="field"></select>
+      </div>
+      <div class="panel-label"><label for="show-highlighting">読んでいる文の表示</label></div>
+      <div class="field-row">
+        <select id="show-highlighting" class="field">
+          <option value="0">表示しない</option>
+          <option value="1">ポップアップに表示</option>
+          <option value="2">別のウィンドウに表示</option>
+          <option value="3">ページ上に表示</option>
+        </select>
+      </div>
+      <div class="audio-playback-visible">
+        <div class="panel-label"><label for="audio-playback">音声の再生</label></div>
+        <div class="field-row">
+          <select id="audio-playback" class="field">
+            <option value="false">別のタブで再生</option>
+            <option value="true">ページ内で再生</option>
+          </select>
+        </div>
+      </div>
+      <label class="switch-row">
+        <span>ダークモード</span>
+        <input id="dark-mode-switch" type="checkbox" role="switch">
+      </label>
+
+      <hr>
+      <div class="link-list">
+        <button id="hotkeys-link" type="button" class="link-row"><i class="material-icons">keyboard</i>ショートカットキーを変更</button>
+        <a href="advanced-options.html?referer=popup.html" class="link-row"><i class="material-icons">tune</i>詳細設定（読み方の置き換えなど）</a>
+        <a href="report.html?referer=popup.html" class="link-row"><i class="material-icons">feedback</i>問題を報告</a>
+        <button id="reset" type="button" class="link-row"><i class="material-icons">restart_alt</i>設定を元に戻す</button>
+      </div>
+      <div id="fork-label" title="日本語を 1 文ずつ読む改造版（nihi566/read-aloud の ja-sentence-highlight）">Read Aloud 改造版</div>
+    </div>
+  </div>
 
   <div id="status" role="alert">
   </div>
   <div id="local-voice-loading" role="status">声を読み込み中です（しばらく使わなかった後の最初の 1 回は 5〜10 秒かかります）</div>
-
-  <div id="buttons">
-    <button id="btnRewind" type="button" class="transport-btn" title="前の文へ（←）" aria-label="前の文へ">
-      <i class="material-icons">skip_previous</i>
-    </button>
-    <div id="primary-slot">
-      <span id="imgLoading" class="spinner" role="status" aria-label="読み込み中"></span>
-      <button id="btnPlay" type="button" class="primary-btn" title="読み上げる（Space）" aria-label="読み上げる">
-        <i class="material-icons">play_arrow</i>
-      </button>
-      <button id="btnPause" type="button" class="primary-btn" title="一時停止（Space）" aria-label="一時停止">
-        <i class="material-icons">pause</i>
-      </button>
-    </div>
-    <button id="btnStop" type="button" class="transport-btn" title="停止" aria-label="停止">
-      <i class="material-icons">stop</i>
-    </button>
-    <button id="btnForward" type="button" class="transport-btn" title="次の文へ（→）" aria-label="次の文へ">
-      <i class="material-icons">skip_next</i>
-    </button>
-  </div>
-  <div id="play-hint">このページを読み上げる</div>
-
-  <div id="quick-controls">
-    <div class="stepper" title="読み上げの速さ（↑↓ キーでも変えられる。読み上げ中に変えると、今の文から読み直す）">
-      <button id="decrease-rate" type="button" class="stepper-btn" aria-label="遅くする">
-        <i class="material-icons">remove</i>
-      </button>
-      <span id="rate-value"></span>
-      <button id="increase-rate" type="button" class="stepper-btn" aria-label="速くする">
-        <i class="material-icons">add</i>
-      </button>
-    </div>
-    <label class="voice-picker" title="声（読み上げ中に変えると、今の文から読み直す）">
-      <i class="material-icons">record_voice_over</i>
-      <select id="quick-voice" aria-label="声"></select>
-    </label>
-  </div>
-
-  <div id="bgm-controls">
-    <button id="bgm-toggle" type="button" class="bgm-toggle" aria-pressed="false" title="BGM（YouTube Music の再生リスト）を読み上げ中に流す">
-      <i class="material-icons">music_note</i><span>BGM</span>
-    </button>
-    <button id="bgm-next" type="button" class="stepper-btn" title="BGM を次の曲へ送る" aria-label="BGM を次の曲へ送る" disabled>
-      <i class="material-icons">skip_next</i>
-    </button>
-    <label class="volume" title="声の音量（離すと、今の文から新しい音量で読み直す）">
-      <i class="material-icons">record_voice_over</i>
-      <input id="voice-volume" type="range" min="20" max="100" step="5" aria-label="声の音量">
-    </label>
-    <label class="volume" title="BGM の音量">
-      <i class="material-icons">music_note</i>
-      <input id="bgm-volume" type="range" min="0" max="100" step="1" aria-label="BGM の音量">
-    </label>
-    <button id="bgm-edit" type="button" class="stepper-btn" title="BGM の再生リストを変える" aria-label="BGM の再生リストを変える">
-      <i class="material-icons">playlist_play</i>
-    </button>
-  </div>
-  <div id="bgm-now" role="status" title="BGM で流れている曲">
-    <i class="material-icons">music_note</i><span id="bgm-title"></span>
-  </div>
-  <form id="bgm-setup">
-    <input id="bgm-url" type="url" placeholder="YouTube Music の再生リストの URL" aria-label="YouTube Music の再生リストの URL">
-    <button id="bgm-save" type="submit" class="bgm-btn">保存</button>
-  </form>
   <div id="bgm-notice" role="status">
     ブラウザが BGM の自動再生を止めました。BGM のタブで再生ボタンを押してください。
     <button id="bgm-show-tab" type="button" class="bgm-btn">BGM のタブを開く</button>
@@ -146,7 +183,6 @@
   </div>
 
   <div id="footer">
-    <a href="report.html?referer=popup.html">問題を報告</a>
   </div>
 </body>
 </html>
