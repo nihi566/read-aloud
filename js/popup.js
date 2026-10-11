@@ -57,18 +57,13 @@ async function popout(tabId) {
 async function init() {
   await domReady()
 
-  $("#btnPlay").click(onPlay);
-  $("#btnPause").click(onPause);
-  $("#btnStop").click(onStop);
-  $("#btnSettings").click(onSettings);
-  $("#btnForward").click(onForward);
-  $("#btnRewind").click(onRewind);
+  $("#btnMain").click(onMain);
+  $("#btnPause").click(onPauseToggle);
   $("#decrease-font-size").click(changeFontSize.bind(null, -1));
   $("#increase-font-size").click(changeFontSize.bind(null, +1));
   $("#decrease-window-size").click(changeWindowSize.bind(null, -1));
   $("#increase-window-size").click(changeWindowSize.bind(null, +1));
-  $("#toggle-dark-mode").click(toggleDarkMode);
-  initQuickControls();
+  initPanel();
   initBgmControls();
   initKeyboardShortcuts();
   initFollowCurrent();
@@ -102,14 +97,14 @@ function handleError(err) {
             .then(function(granted) {
               if (granted) {
                 if (errInfo.reload) return reloadAndPlay()
-                else $("#btnPlay").click()
+                else onPlay()
               }
             })
           break;
         case "#sign-in":
           getAuthToken({interactive: true})
             .then(function(token) {
-              if (token) $("#btnPlay").click();
+              if (token) onPlay();
             })
             .catch(function(err) {
               $("#status").text(err.message).show();
@@ -134,7 +129,7 @@ function handleError(err) {
     $("#status").html("Click <a href='#open-player-tab'>here</a> to start read aloud.").show()
     $("#status a").click(async function() {
       try {
-        playerCheckIn$.pipe(rxjs.take(1)).subscribe(() => $("#btnPlay").click())
+        playerCheckIn$.pipe(rxjs.take(1)).subscribe(() => onPlay())
         const tab = await brapi.tabs.create({
           url: "player.html?opener=popup&autoclose=long",
           index: 0,
@@ -170,20 +165,24 @@ async function updateButtons() {
   engineInitializingSubject.next(state == "LOADING" && speech?.engine)
   updateLocalVoiceLoading(state == "LOADING" && speech)
 
-  $("#imgLoading").toggle(state == "LOADING");
-  $("#btnPlay").toggle(state == "PAUSED" || state == "STOPPED");
-  $("#btnPause").toggle(state == "PLAYING");
-  $("#btnStop").toggle(state == "PAUSED" || state == "PLAYING" || state == "LOADING");
-  $("#btnForward, #btnRewind").toggle(state == "PLAYING" || state == "PAUSED");
-  $("#play-hint").toggle(state == "STOPPED");
+  playbackState = state
+  const reading = isReading()
+  const mainLabel = reading ? "読み上げを止める" : "このページを読み上げる"
+  $("#btnMain").toggleClass("active", reading).toggleClass("loading", state == "LOADING")
+    .attr({title: mainLabel, "aria-label": mainLabel})
+  const pauseLabel = state == "PLAYING" ? "一時停止（Space）" : state == "PAUSED" ? "続きから読む（Space）" : "読み上げる（Space）"
+  $("#btnPause").attr({title: pauseLabel, "aria-label": pauseLabel})
+    .find(".material-icons").text(state == "PLAYING" ? "pause" : "play_arrow")
 
   if ((showHighlighting == 1 || showHighlighting == 2) && (state == "LOADING" || state == "PAUSED" || state == "PLAYING") && speech) {
     $("#highlight-wrap, #toolbar").show()
+    $("body").addClass("has-text")
     updateHighlighting(speech)
     fitPanel()
   }
   else {
     $("#highlight-wrap, #toolbar").hide()
+    $("body").removeClass("has-text")
   }
 }
 
@@ -291,6 +290,27 @@ function scrollIntoView(child, scrollParent, force) {
 
 
 var currentPlayRequestId
+var playbackState = "STOPPED"
+
+function isReading() {
+  return playbackState == "PLAYING" || playbackState == "PAUSED" || playbackState == "LOADING"
+}
+
+//the buttons act on the state at the time of the click; the shown state is refreshed only every 500ms
+function onMain() {
+  bgPageInvoke("getPlaybackState")
+    .then(({state}) => state == "STOPPED" ? onPlay() : onStop())
+    .catch(handleError)
+}
+
+function onPauseToggle() {
+  bgPageInvoke("getPlaybackState")
+    .then(({state}) => {
+      if (state == "PLAYING") onPause()
+      else if (state != "LOADING") onPlay()
+    })
+    .catch(handleError)
+}
 
 function onPlay() {
   $("#status").hide();
@@ -324,10 +344,6 @@ function onStop() {
   bgPageInvoke("stop")
     .then(updateButtons)
     .catch(handleError)
-}
-
-function onSettings() {
-  location.href = "options.html?referer=popup.html";
 }
 
 function onForward() {
@@ -366,7 +382,7 @@ function changeWindowSize(delta) {
 }
 
 function refreshSize() {
-  return getSettings(["highlightFontSize", "highlightWindowSize"])
+  return getSettings(["highlightFontSize", "highlightWindowSize", "showHighlighting"])
     .then(function(settings) {
       var fontSize = getFontSize(settings);
       var windowSize = getWindowSize(settings);
@@ -377,8 +393,10 @@ function refreshSize() {
         $("#highlight").css({
           width: isMobileOS() ? "100%" : windowSize[0],
         }).data("targetHeight", windowSize[1])
-        //keep the popup as wide in every state, so it doesn't jump when reading starts
-        if (!isMobileOS()) $("body").css("min-width", windowSize[0])
+        //when the text is shown in the popup, keep the popup as wide in every state, so it doesn't jump when
+        //reading starts; otherwise the popup is just the compact toolbar
+        const showHighlighting = settings.showHighlighting != null ? Number(settings.showHighlighting) : defaults.showHighlighting
+        if (!isMobileOS()) $("body").css("min-width", showHighlighting == 1 ? windowSize[0] : "")
         fitPanel()
       }
       scrollToCurrent(true)
@@ -447,41 +465,182 @@ function showAnnouncement(ann) {
     })
 }
 
-function toggleDarkMode() {
-  const darkMode = document.body.classList.toggle("dark-mode")
-  updateSettings({darkMode})
-}
-
-
-
-//quick controls（改造版）: change the rate and the voice from the popup; while reading, the current
-//sentence is read again with the new setting (Doc.restartCurrent)
+//panel（改造版）: the voice and the speed open under the toolbar (the chevron or the speed), and the gear adds
+//the rest of the options page, so nothing needs another page. While reading, the current sentence is read
+//again with the new setting (Doc.restartCurrent)
 const QUICK_RATE_STEP = 0.1
 const QUICK_RATE_MIN = 0.5
 const QUICK_RATE_MAX = 3
 
-function initQuickControls() {
-  $("#decrease-rate").click(() => changeRate(-QUICK_RATE_STEP).catch(handleError))
-  $("#increase-rate").click(() => changeRate(+QUICK_RATE_STEP).catch(handleError))
-  $("#quick-voice").change(function() {
-    changeVoice($(this).val()).catch(handleError)
+function initPanel() {
+  $("#btnExpand").click(() => togglePanel(isPanelOpen() ? null : "quick"))
+  $("#btnSettings").click(() => togglePanel(isPanelOpen() && !$("#more-settings").prop("hidden") ? null : "settings"))
+  $("#rate-btn").click(() => {
+    if (isPanelOpen()) return togglePanel(null)
+    togglePanel("quick")
+    $("#rate-range").focus()
   })
+  $(document).on("keydown", e => {
+    if (e.key == "Escape" && isPanelOpen()) {
+      togglePanel(null)
+      e.preventDefault()
+    }
+  })
+  initVoiceChoices()
+  initSliders()
+  initOtherSettings()
+}
 
-  observeSetting("voiceName")
-    .pipe(rxjs.switchMap(voiceName => observeSetting("rate" + (voiceName || ""))))
-    .subscribe(rate => $("#rate-value").text(formatRate(rate || defaults.rate)))
+function isPanelOpen() {
+  return !$("#panel").prop("hidden")
+}
 
+//mode: "quick" = voice and speed, "settings" = everything, null = closed
+function togglePanel(mode) {
+  $("#panel").prop("hidden", !mode)
+  $("#more-settings").prop("hidden", mode != "settings")
+  $("#btnExpand, #rate-btn").attr("aria-expanded", String(!!mode))
+  $("#btnSettings").attr("aria-expanded", String(mode == "settings")).toggleClass("active", mode == "settings")
+  $("#btnExpand .material-icons").text(mode ? "expand_less" : "expand_more")
+  fitPanel()
+}
+
+function initVoiceChoices() {
   rxjs.combineLatest([observeSetting("voiceName"), rxjs.defer(getQuickVoices)])
     .subscribe(([voiceName, voices]) => {
       const names = voices.includes(voiceName) || !voiceName ? voices : [voiceName, ...voices]
-      const select = $("#quick-voice").empty()
-      if (!voiceName) $("<option>").val("").text("自動で選ぶ").appendTo(select)
-      for (const name of names) {
-        $("<option>").val(name).text(localVoiceLabel(name).replace(/^OpenAI /, "")).attr("title", name).appendTo(select)
+      const list = $("#voice-list").empty()
+      const choices = voiceName ? names : ["", ...names]
+      for (const name of choices) {
+        const label = name ? localVoiceLabel(name).replace(/^OpenAI /, "") : "自動で選ぶ"
+        const input = $("<input type='radio' name='voice'>").val(name).prop("checked", name == (voiceName || ""))
+        $("<label class='voice-choice'>").attr("title", name || label).append(input, $("<span>").text(label)).appendTo(list)
       }
-      select.val(voiceName || "").attr("title", voiceName ? localVoiceLabel(voiceName) : "自動で選ぶ")
+      fitPanel()
+    })
+  $("#voice-list").on("change", "input", function() {
+    changeVoice($(this).val()).catch(handleError)
+  })
+
+  //every voice, as in the options page (browser voices, other languages, adding custom voices)
+  rxjs.combineLatest([
+    voices$,
+    observeSetting("languages"),
+    brapi.i18n.getAcceptLanguages().catch(err => {console.error(err); return []}),
+  ]).pipe(
+    rxjs.tap(([voices, languages, acceptLangs]) => populateVoices($("#all-voices"), voices, {languages}, acceptLangs)),
+    rxjs.switchMap(() => observeSetting("voiceName"))
+  ).subscribe(voiceName => $("#all-voices").val(voiceName || ""))
+  $("#all-voices").change(function() {
+    const voiceName = $(this).val()
+    if (openVoiceSource(voiceName)) changeVoice(voiceName).catch(handleError)
+    else getSetting("voiceName").then(current => $(this).val(current || ""))
+  })
+  $("#languages-edit-button").click(() => brapi.tabs.create({url: "languages.html"}))
+}
+
+function initSliders() {
+  observeSetting("voiceName")
+    .pipe(rxjs.switchMap(voiceName => observeSetting("rate" + (voiceName || ""))))
+    .subscribe(rate => {
+      $("#rate-value").text(formatRate(rate || defaults.rate))
+      setSlider("#rate-range", rate || defaults.rate, formatRate)
+    })
+  observeSetting("pitch").subscribe(pitch => setSlider("#pitch-range", pitch || defaults.pitch, formatPitch))
+  observeSetting("volume").subscribe(volume => setSlider("#volume-range", volume || defaults.volume, formatVolume))
+
+  bindSlider("#rate-range", formatRate, async value => {
+    await updateSetting("rate" + ((await getSetting("voiceName")) || ""), value)
+  })
+  bindSlider("#pitch-range", formatPitch, value => updateSettings({pitch: value}))
+  bindSlider("#volume-range", formatVolume, value => updateSettings({volume: value}))
+}
+
+//the value shows while dragging; the setting is saved when it is let go, and the sentence is read again
+//once the arrow keys stop (each key press is a change)
+const SLIDER_RESTART_DELAY_MS = 400
+
+function bindSlider(sel, format, save) {
+  let restartTimer = null
+  $(sel)
+    .on("input", function() {
+      showSliderValue(sel, Number(this.value), format)
+    })
+    .on("change", function() {
+      Promise.resolve(save(Number(this.value)))
+        .then(() => {
+          clearTimeout(restartTimer)
+          restartTimer = setTimeout(() => restartIfReading().catch(handleError), SLIDER_RESTART_DELAY_MS)
+        })
+        .catch(handleError)
     })
 }
+
+function setSlider(sel, value, format) {
+  $(sel).val(value)
+  showSliderValue(sel, value, format)
+}
+
+function showSliderValue(sel, value, format) {
+  const input = $(sel)
+  const min = Number(input.attr("min")), max = Number(input.attr("max"))
+  const percent = 100 * (Math.min(max, Math.max(min, value)) - min) / (max - min)
+  input.css("--fill", percent + "%").attr("aria-valuetext", format(value))
+  $(sel + "-value").text(format(value))
+}
+
+function initOtherSettings() {
+  observeSetting("showHighlighting")
+    .subscribe(value => $("#show-highlighting").val(String(value != null ? value : defaults.showHighlighting)))
+  $("#show-highlighting").change(function() {
+    updateSettings({showHighlighting: $(this).val()}).then(refreshSize).catch(handleError)
+  })
+
+  //shown only to those who have used the embedded player, as in the options page
+  brapi.storage.local.get(["useEmbeddedPlayer"])
+    .then(settings => $(".audio-playback-visible").toggle(settings.useEmbeddedPlayer ? true : false))
+  observeSetting("useEmbeddedPlayer")
+    .subscribe(value => $("#audio-playback").val(value ? "true" : "false"))
+  $("#audio-playback").change(function() {
+    updateSettings({useEmbeddedPlayer: JSON.parse($(this).val())})
+    brapi.runtime.sendMessage({dest: "player", method: "close"})
+      .catch(err => "OK")
+  })
+
+  observeSetting("darkMode").subscribe(darkMode => {
+    $("#dark-mode-switch").prop("checked", !!darkMode)
+    document.body.classList.toggle("dark-mode", !!darkMode)
+  })
+  $("#dark-mode-switch").change(function() {
+    document.body.classList.toggle("dark-mode", this.checked)
+    updateSettings({darkMode: this.checked})
+  })
+
+  $("#hotkeys-link").click(() => brapi.tabs.create({url: getHotkeySettingsUrl()}))
+  //this also clears the word replacements, so a first click only asks for a second one
+  let resetArmed = null
+  $("#reset").click(function() {
+    if (!resetArmed) {
+      $(this).addClass("armed").contents().last().replaceWith(RESET_CONFIRM_TEXT)
+      resetArmed = setTimeout(disarmReset, RESET_CONFIRM_MS)
+      return
+    }
+    disarmReset()
+    clearSettings()
+      .then(restartIfReading)
+      .then(refreshSize)
+      .catch(handleError)
+  })
+  function disarmReset() {
+    clearTimeout(resetArmed)
+    resetArmed = null
+    $("#reset").removeClass("armed").contents().last().replaceWith(RESET_TEXT)
+  }
+}
+
+const RESET_TEXT = "設定を元に戻す"
+const RESET_CONFIRM_TEXT = "もう一度押すと、読み方の置き換えも含めて元に戻します"
+const RESET_CONFIRM_MS = 4000
 
 async function getQuickVoices() {
   try {
@@ -505,7 +664,6 @@ async function changeRate(delta) {
 }
 
 async function changeVoice(voiceName) {
-  if (!voiceName) return
   await updateSettings({voiceName})
   await restartIfReading()
 }
@@ -517,7 +675,7 @@ async function restartIfReading() {
 
 
 
-//BGM（改造版）: turn a YouTube Music playlist on/off and set the voice and BGM volumes. While it is on,
+//BGM（改造版）: turn a YouTube Music playlist on/off and set the BGM volume (the voice volume is in the panel). While it is on,
 //the player starts and stops the BGM with the reading (js/player.js)
 function initBgmControls() {
   $("#bgm-toggle").click(onBgmToggle)
@@ -528,17 +686,12 @@ function initBgmControls() {
   })
   $("#bgm-show-tab").click(() => bgm.showTab().catch(handleError))
   $("#bgm-next").click(onBgmNext)
+  $("#bgm-volume").on("input", () => showSliderValue("#bgm-volume", Number($("#bgm-volume").val()), v => v + "%"))
   $("#bgm-volume").on("input", throttle(() => bgm.setVolume($("#bgm-volume").val()).catch(handleError)))
   $("#bgm-volume").on("change", () => bgm.setVolume($("#bgm-volume").val()).catch(handleError))
-  $("#voice-volume").on("change", function() {
-    updateSettings({volume: Number($(this).val()) / 100})
-      .then(restartIfReading)
-      .catch(handleError)
-  })
 
   observeSetting("bgmEnabled").subscribe(enabled => $("#bgm-toggle").attr("aria-pressed", String(!!enabled)))
-  observeSetting("bgmVolume").subscribe(volume => $("#bgm-volume").val(volume != null ? volume : BGM_DEFAULT_VOLUME))
-  observeSetting("volume").subscribe(volume => $("#voice-volume").val(Math.round((volume || defaults.volume) * 100)))
+  observeSetting("bgmVolume").subscribe(volume => setSlider("#bgm-volume", volume != null ? volume : BGM_DEFAULT_VOLUME, v => v + "%"))
   //set by js/bgm.js when the browser blocked the autoplay, whether the popup or the player started it
   rxjs.combineLatest([observeSetting("bgmEnabled"), observeSetting("bgmBlocked")])
     .subscribe(([enabled, blocked]) => {
@@ -639,24 +792,23 @@ function initKeyboardShortcuts() {
   $(document).on("keydown", function(e) {
     if (e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return
     if ($(e.target).is("input, select, textarea, [contenteditable]")) return
-    const visible = sel => $(sel).is(":visible")
+    const canMove = playbackState == "PLAYING" || playbackState == "PAUSED"
     switch (e.key) {
       case " ":
-        if ($(e.target).is("button")) return
-        if (visible("#btnPause")) $("#btnPause").click()
-        else if (visible("#btnPlay")) $("#btnPlay").click()
+        if ($(e.target).is("button, a")) return
+        $("#btnPause").click()
         break
       case "ArrowLeft":
-        if (visible("#btnRewind")) $("#btnRewind").click()
+        if (canMove) onRewind()
         break
       case "ArrowRight":
-        if (visible("#btnForward")) $("#btnForward").click()
+        if (canMove) onForward()
         break
       case "ArrowUp":
       case "ArrowDown":
         //arrow keys scroll the reading panel when it has the focus
         if ($(e.target).closest("#highlight").length) return
-        $(e.key == "ArrowUp" ? "#increase-rate" : "#decrease-rate").click()
+        changeRate(e.key == "ArrowUp" ? +QUICK_RATE_STEP : -QUICK_RATE_STEP).catch(handleError)
         break
       default:
         return
@@ -734,4 +886,14 @@ function throttle(fn) {
 function formatRate(rate) {
   const text = String(Number(rate.toFixed(2)))
   return (text.includes(".") ? text : text + ".0") + "x"
+}
+
+//1 → "1.0", 1.25 → "1.25" (as in the options page)
+function formatPitch(pitch) {
+  return pitch.toFixed(2).replace(/0$/, "")
+}
+
+//0.8 → "80%"
+function formatVolume(volume) {
+  return Math.round(volume * 100) + "%"
 }
