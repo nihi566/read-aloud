@@ -14,6 +14,7 @@
   <script src="js/defaults.js"></script>
   <script src="js/messaging.js"></script>
   <script src="js/local-voice-server.js"></script>
+  <script src="js/bgm.js"></script>
   <script src="js/popup.js"></script>
 </head>
 <body>
@@ -69,6 +70,31 @@
       <i class="material-icons">record_voice_over</i>
       <select id="quick-voice" aria-label="声"></select>
     </label>
+  </div>
+
+  <div id="bgm-controls">
+    <button id="bgm-toggle" type="button" class="bgm-toggle" aria-pressed="false" title="BGM（YouTube Music の再生リスト）を読み上げ中に流す">
+      <i class="material-icons">music_note</i><span>BGM</span>
+    </button>
+    <label class="volume" title="声の音量（離すと、今の文から新しい音量で読み直す）">
+      <i class="material-icons">record_voice_over</i>
+      <input id="voice-volume" type="range" min="20" max="100" step="5" aria-label="声の音量">
+    </label>
+    <label class="volume" title="BGM の音量">
+      <i class="material-icons">music_note</i>
+      <input id="bgm-volume" type="range" min="0" max="100" step="1" aria-label="BGM の音量">
+    </label>
+    <button id="bgm-edit" type="button" class="stepper-btn" title="BGM の再生リストを変える" aria-label="BGM の再生リストを変える">
+      <i class="material-icons">playlist_play</i>
+    </button>
+  </div>
+  <form id="bgm-setup">
+    <input id="bgm-url" type="url" placeholder="YouTube Music の再生リストの URL" aria-label="YouTube Music の再生リストの URL">
+    <button id="bgm-save" type="submit" class="bgm-btn">保存</button>
+  </form>
+  <div id="bgm-notice" role="status">
+    ブラウザが BGM の自動再生を止めました。BGM のタブで再生ボタンを押してください。
+    <button id="bgm-show-tab" type="button" class="bgm-btn">BGM のタブを開く</button>
   </div>
 
   <div id="highlight-wrap">
