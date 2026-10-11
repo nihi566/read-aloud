@@ -31,30 +31,83 @@ function bgmWatchUrl(playlistId) {
   return "https://music.youtube.com/watch?list=" + encodeURIComponent(playlistId)
 }
 
+function isBgmReadingState(state) {
+  return state == "PLAYING" || state == "LOADING"
+}
+
 //what the BGM does when the reading goes from prevState to state: "play", "pause" or null (leave it)
 function bgmActionFor(prevState, state) {
-  const reading = s => s == "PLAYING" || s == "LOADING"
-  if (reading(state) && !reading(prevState)) return "play"
-  if (!reading(state) && reading(prevState)) return "pause"
+  if (isBgmReadingState(state) && !isBgmReadingState(prevState)) return "play"
+  if (!isBgmReadingState(state) && isBgmReadingState(prevState)) return "pause"
   return null
 }
 
+//keeps the BGM following the reading (used by the player); call the returned function every second.
+//getReadingState() returns the reading's state ("PLAYING", "LOADING", "PAUSED" or "STOPPED")
+function makeBgmSync(getReadingState) {
+  let lastState = "STOPPED"
+  let busy = false
+  const shouldContinue = async () => isBgmReadingState(await getReadingState()) && !!await getSetting("bgmEnabled")
+  async function tick() {
+    if (busy) return
+    busy = true
+    try {
+      const state = await getReadingState()
+      const action = bgmActionFor(lastState, state)
+      if (action && await getSetting("bgmEnabled")) {
+        if (action == "play") await bgm.play({shouldContinue})
+        else await bgm.pause()
+      }
+      //only once done, so that a failed start is tried again on the next tick
+      lastState = state
+    }
+    catch (err) {
+      console.error("BGM", err)
+    }
+    finally {
+      busy = false
+    }
+  }
+  tick.isReading = () => isBgmReadingState(lastState)
+  return tick
+}
+
 var bgm = {
-  //returns {playing}: false when the browser blocked the autoplay (the user has to press play in the tab)
-  async play() {
+  //returns {playing}: false when the browser blocked the autoplay (the user has to press play in the tab).
+  //{cancelled: true} when the BGM was paused, or shouldContinue() turned false, before it started
+  async play({shouldContinue} = {}) {
+    const startedAt = Date.now()
     const settings = await getSettings(["bgmPlaylistUrl", "bgmVolume"])
     const playlistId = parseBgmPlaylistId(settings.bgmPlaylistUrl)
     if (!playlistId) throw new Error("BGM の再生リストの URL が設定されていません")
+    //without it the tab's address can't be read, and every start would open another tab
+    if (!await brapi.permissions.contains({origins: [BGM_ORIGIN]}))
+      throw new Error("music.youtube.com を操作する許可がありません。BGM のボタンを押して許可してください")
+    const isCancelled = async () =>
+      (await getSetting("bgmPausedAt") || 0) > startedAt || (shouldContinue != null && !await shouldContinue())
+
     //the popup and the player may both start the BGM at once; only one of them opens the tab
     const tab = await withBgmLock(async () => await findBgmTab() || await openBgmTab(playlistId))
+    if (tab.discarded) await brapi.tabs.reload(tab.id)
     const volume = settings.bgmVolume != null ? settings.bgmVolume : BGM_DEFAULT_VOLUME
-    if (!await pollBgmTab(bgmTiming.readyTimeoutMs, () => runInBgmTab(tab.id, bgmPagePlay, [volume])))
-      throw new Error("YouTube Music のプレーヤーが開けませんでした。BGM のタブを確かめてください")
-    const playing = await pollBgmTab(bgmTiming.settleMs, () => runInBgmTab(tab.id, bgmPageIsPlaying))
+    let cancelled = false
+    const started = await pollBgmTab(bgmTiming.readyTimeoutMs, async () => {
+      if (await isCancelled()) return cancelled = true
+      return runInBgmTab(tab.id, bgmPagePlay, [volume])
+    })
+    if (!started) throw new Error("YouTube Music のプレーヤーが開けませんでした。BGM のタブを確かめてください")
+    const playing = !cancelled && await pollBgmTab(bgmTiming.settleMs, () => runInBgmTab(tab.id, bgmPageIsPlaying))
+    if (cancelled || await isCancelled()) {
+      //paused while it was starting: pause again, as playVideo() may have run after that
+      await runInBgmTab(tab.id, bgmPagePause).catch(console.error)
+      return {playing: false, cancelled: true}
+    }
+    await updateSettings({bgmBlocked: !playing})
     return {playing}
   },
 
   async pause() {
+    await updateSettings({bgmPausedAt: Date.now(), bgmBlocked: false})
     const tab = await findBgmTab()
     if (tab) await runInBgmTab(tab.id, bgmPagePause)
   },
@@ -75,6 +128,7 @@ var bgm = {
   },
 
   async showTab() {
+    await updateSettings({bgmBlocked: false})
     const tab = await findBgmTab()
     if (!tab) return
     await brapi.tabs.update(tab.id, {active: true})
@@ -82,9 +136,19 @@ var bgm = {
   },
 }
 
+//tab ids are given again after the browser restarts, so the id is kept only until it closes
+async function getBgmTabId() {
+  if (!brapi.storage.session) return null
+  return (await brapi.storage.session.get("bgmTabId")).bgmTabId
+}
+
+function setBgmTabId(tabId) {
+  if (brapi.storage.session) return brapi.storage.session.set({bgmTabId: tabId})
+}
+
 //the tab opened earlier, unless it was closed or went to another site
 async function findBgmTab() {
-  const tabId = await getSetting("bgmTabId")
+  const tabId = await getBgmTabId()
   if (tabId == null) return null
   try {
     const tab = await brapi.tabs.get(tabId)
@@ -99,7 +163,7 @@ async function findBgmTab() {
 
 async function openBgmTab(playlistId) {
   const tab = await brapi.tabs.create({url: bgmWatchUrl(playlistId), active: false})
-  await updateSettings({bgmTabId: tab.id})
+  await setBgmTabId(tab.id)
   await brapi.tabs.update(tab.id, {pinned: true})
   return tab
 }

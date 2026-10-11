@@ -216,27 +216,15 @@ if (queryString.has("opener")) {
 //BGM（改造版）: while the BGM is on, play it while reading and pause it when the reading is paused,
 //stopped or finished (js/bgm.js)
 const BGM_SYNC_INTERVAL_MS = 1000
-var bgmLastState = "STOPPED"
-var bgmSyncing = false
+const syncBgm = makeBgmSync(async () => activeDoc ? await activeDoc.getState() : "STOPPED")
 
 setInterval(syncBgm, BGM_SYNC_INTERVAL_MS)
 
-async function syncBgm() {
-  if (bgmSyncing) return
-  bgmSyncing = true
-  try {
-    const state = activeDoc ? await activeDoc.getState() : "STOPPED"
-    const action = bgmActionFor(bgmLastState, state)
-    bgmLastState = state
-    if (action && await getSetting("bgmEnabled")) await (action == "play" ? bgm.play() : bgm.pause())
-  }
-  catch (err) {
-    console.error("BGM", err)
-  }
-  finally {
-    bgmSyncing = false
-  }
-}
+//closing the player while reading (its tab closed, or the page with the embedded player left) would
+//leave nothing to pause the BGM. The page is gone before it could pause it, so the service worker does
+window.addEventListener("pagehide", function() {
+  if (syncBgm.isReading()) bgPageInvoke("pauseBgm").catch(console.error)
+})
 
 
 document.addEventListener("DOMContentLoaded", initialize)

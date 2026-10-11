@@ -25,6 +25,8 @@ var handlers = {
   managePiperVoices,
   manageSupertonicVoices,
   manageNghiTtsVoices,
+  //改造版: the player asks this when it closes, since a closing page can't finish pausing the BGM itself
+  pauseBgm: () => bgm.pause(),
 }
 
 registerMessageListener("serviceWorker", handlers)
