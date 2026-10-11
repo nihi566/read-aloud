@@ -21,7 +21,34 @@ engineInitializingSubject
 $(function() {
   if (queryString.isPopup) $("body").addClass("is-popup")
   else getCurrentTab().then(function(currentTab) {return updateSettings({readAloudTab: currentTab.id})})
+  if (queryString.fab) initFab()
 })
+
+//floating toolbar（改造版）: in the box on the page (js/fab.js) the page sizes the frame to the toolbar, so tell it
+//the size whenever the panel opens or closes, and open the other pages in tabs rather than in the small frame
+function initFab() {
+  $("body").addClass("is-fab")
+  $("a.link-row").attr("target", "_blank")
+  const report = () => {
+    const rect = document.body.getBoundingClientRect()
+    window.parent.postMessage({
+      type: "read-aloud-fab:size",
+      width: rect.width,
+      height: rect.height,
+      background: getComputedStyle(document.body).backgroundColor,
+    }, "*")
+  }
+  //the page shows the frame only after the first size; tell it now, since Chrome may not lay out a frame it doesn't show
+  report()
+  new ResizeObserver(report).observe(document.body)
+  //the dark mode switch changes the colors, not the size
+  new MutationObserver(report).observe(document.body, {attributes: true, attributeFilter: ["class"]})
+}
+
+function closePopup() {
+  if (queryString.fab) window.parent.postMessage({type: "read-aloud-fab:close"}, "*")
+  else window.close()
+}
 
 
 
@@ -40,7 +67,7 @@ async function popout(tabId) {
     if (!tabId) throw "Create"
     const tab = await updateTab(tabId, {url, active: true})
     await updateWindow(tab.windowId, {focused: true}).catch(console.error)
-    window.close()
+    closePopup()
   }
   catch (err) {
     await createWindow({
@@ -50,7 +77,7 @@ async function popout(tabId) {
       width: 500,
       height: 600,
     })
-    window.close()
+    closePopup()
   }
 }
 
@@ -120,7 +147,9 @@ function handleError(err) {
           brapi.tabs.create({url: config.pdfViewerUrl})
           break
         case "#connect-phone":
-          location.href = "connect-phone.html"
+          //改造版: the box on the page is too small for another page
+          if (queryString.fab) brapi.tabs.create({url: "connect-phone.html"})
+          else location.href = "connect-phone.html"
           break
       }
     })

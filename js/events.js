@@ -98,6 +98,32 @@ brapi.contextMenus.onClicked.addListener(function(info, tab) {
 
 
 /**
+ * Toolbar button handler（改造版）: shows the popup as a box the user can drag on the page (js/fab.js).
+ * Pages that take no scripts (the browser's own pages, the web store) get the usual popup instead.
+ */
+const POPUP_PAGE = "popup.html?isPopup=1"
+
+brapi.action.onClicked.addListener(async function(tab) {
+  try {
+    await brapi.scripting.executeScript({target: {tabId: tab.id}, files: ["js/fab.js"]})
+  }
+  catch (err) {
+    console.info("Showing the popup, since the page takes no scripts:", err.message)
+    await brapi.action.setPopup({tabId: tab.id, popup: POPUP_PAGE})
+    //openPopup needs Chrome 127; without it the popup opens on the next click
+    if (!brapi.action.openPopup) return
+    try {
+      await brapi.action.openPopup()
+      await brapi.action.setPopup({tabId: tab.id, popup: ""})
+    }
+    catch (err) {
+      console.error(err)
+    }
+  }
+})
+
+
+/**
  * Shortcut keys handlers
  */
 if (brapi.commands)
