@@ -54,12 +54,13 @@ function makeBgmSync(getReadingState) {
     try {
       const state = await getReadingState()
       const action = bgmActionFor(lastState, state)
+      let cancelled = false
       if (action && await getSetting("bgmEnabled")) {
-        if (action == "play") await bgm.play({shouldContinue})
+        if (action == "play") cancelled = !!(await bgm.play({shouldContinue})).cancelled
         else await bgm.pause()
       }
-      //only once done, so that a failed start is tried again on the next tick
-      lastState = state
+      //only once done, so that a failed or cancelled start is tried again on the next tick
+      if (!cancelled) lastState = state
     }
     catch (err) {
       console.error("BGM", err)

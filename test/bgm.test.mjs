@@ -269,6 +269,23 @@ test("読み上げに BGM を追従させる: 始まれば流し、止まれば�
   assert.equal(calls.length, 0);
 });
 
+test("読み上げに BGM を追従させる: 流し始める途中で一時停止され、すぐ再開されたら、もう一度流す", async () => {
+  const tabs = { 7: { id: 7, url: "https://music.youtube.com/watch?list=x", windowId: 1 } };
+  let reading = "PLAYING";
+  let paused = false;
+  const { ctx, calls } = load({
+    settings: { bgmPlaylistUrl: PLAYLIST, bgmEnabled: true }, session: { bgmTabId: 7 }, tabs,
+    // 1 回目の playVideo の直後だけ一時停止されていた
+    onPlayCall: () => { if (!paused) { paused = true; reading = "PAUSED"; } },
+  });
+  const tick = ctx.makeBgmSync(async () => reading);
+  await tick();
+  reading = "PLAYING";
+  calls.length = 0;
+  await tick();
+  assert.ok(calls.some((c) => c[2] == "bgmPagePlay"), "再開したので流し直す");
+});
+
 test("読み上げに BGM を追従させる: 流し始めに失敗したら、次の確認でやり直す", async () => {
   const tabs = { 7: { id: 7, url: "https://music.youtube.com/watch?list=x", windowId: 1 } };
   const { ctx, calls } = load({ settings: { bgmPlaylistUrl: PLAYLIST, bgmEnabled: true }, session: { bgmTabId: 7 }, tabs, playerReady: false });
