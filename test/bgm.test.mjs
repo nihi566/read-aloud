@@ -20,7 +20,8 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 // session: ブラウザを閉じると消える保存場所（BGM のタブの番号を置く）
 // onPlayCall: ページで playVideo を呼ぶたびに呼ばれる（途中で止める操作を割り込ませる）
 // pageResults: ページで動かす関数の名前 → その戻り値（上のもの以外）
-function load({ settings = {}, session = {}, tabs = {}, playerState = 1, playerReady = true, permitted = true, onPlayCall, pageResults = {} } = {}) {
+// navigator: ページ間の順番待ち（navigator.locks）を持つページにするとき
+function load({ settings = {}, session = {}, tabs = {}, playerState = 1, playerReady = true, permitted = true, onPlayCall, pageResults = {}, navigator } = {}) {
   const store = { ...settings };
   const sessionStore = { ...session };
   const tabsById = { ...tabs };
@@ -77,6 +78,7 @@ function load({ settings = {}, session = {}, tabs = {}, playerState = 1, playerR
     getSettings: async (names) => Object.fromEntries((names || Object.keys(store)).map((n) => [n, store[n]])),
     getSetting: async (name) => store[name],
     updateSettings: async (items) => { Object.assign(store, items); },
+    ...(navigator ? { navigator } : {}),
   });
   vm.runInContext(readFileSync(path.join(ROOT, "js/bgm.js"), "utf8"), context);
   vm.runInContext("bgmTiming.pollMs = 1; bgmTiming.settleMs = 1; bgmTiming.readyTimeoutMs = 20", context);
@@ -142,6 +144,32 @@ test("ポップアップと再生画面が同時に流そうとしても、BGM �
   const { ctx, calls } = load({ settings: { bgmPlaylistUrl: PLAYLIST } });
   await Promise.all([ctx.bgm.play(), ctx.bgm.play(), ctx.bgm.play()]);
   assert.equal(calls.filter((c) => c[0] == "create").length, 1);
+});
+
+// ページに浮かべた操作ボックス（ページの中の枠）では、ブラウザが順番待ちを断る（Brave で確認）
+const deniedLocks = { locks: { request: async () => { throw new DOMException("The request was denied.", "SecurityError"); } } };
+
+test("浮かぶ操作ボックスの中でページ間の順番待ちを断られても、BGM のタブを開いて流す", async () => {
+  const { ctx, calls } = load({ settings: { bgmPlaylistUrl: PLAYLIST }, navigator: deniedLocks });
+  const result = await ctx.bgm.play();
+  assert.equal(result.playing, true);
+  assert.equal(calls.filter((c) => c[0] == "create").length, 1);
+});
+
+test("順番待ちを断られたページでも、同じページの中で同時に流そうとしたら BGM のタブは 1 つしか開かない", async () => {
+  const { ctx, calls } = load({ settings: { bgmPlaylistUrl: PLAYLIST }, navigator: deniedLocks });
+  await Promise.all([ctx.bgm.play(), ctx.bgm.play(), ctx.bgm.play()]);
+  assert.equal(calls.filter((c) => c[0] == "create").length, 1);
+});
+
+test("順番待ちの中で起きた失敗は、順番待ちを使わずにやり直さず、そのまま伝える", async () => {
+  let runs = 0;
+  const locks = { request: async (name, fn) => { runs++; return fn(); } };
+  const { ctx, calls } = load({ settings: { bgmPlaylistUrl: PLAYLIST }, navigator: { locks } });
+  ctx.brapi.tabs.create = async () => { throw new Error("タブを開けない"); };
+  await assert.rejects(ctx.bgm.play(), /タブを開けない/);
+  assert.equal(runs, 1);
+  assert.equal(calls.filter((c) => c[0] == "create").length, 0);
 });
 
 test("広告などでプレーヤーの状態が未開始のままでも、音が出ていれば流れているとみなす", () => {

@@ -201,10 +201,27 @@ async function pollBgmTab(timeoutMs, fn) {
   }
 }
 
-//runs fn in one extension page at a time (the popup and the player are separate pages)
+//runs fn in one extension page at a time (the popup and the player are separate pages). The popup in the box on
+//the page (js/fab.js) is a frame in another site, where the browser may deny the lock (Brave does); it then waits
+//only for this page
 var bgmLocalLock = Promise.resolve()
-function withBgmLock(fn) {
-  if (typeof navigator != "undefined" && navigator.locks) return navigator.locks.request("read-aloud-bgm", fn)
+async function withBgmLock(fn) {
+  if (typeof navigator == "undefined" || !navigator.locks) return withBgmLocalLock(fn)
+  let entered = false
+  try {
+    return await navigator.locks.request("read-aloud-bgm", () => {
+      entered = true
+      return fn()
+    })
+  }
+  catch (err) {
+    if (entered) throw err
+    console.debug("BGM lock unavailable", err)
+    return withBgmLocalLock(fn)
+  }
+}
+
+function withBgmLocalLock(fn) {
   const result = bgmLocalLock.then(fn)
   bgmLocalLock = result.catch(() => {})
   return result
