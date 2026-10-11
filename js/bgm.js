@@ -128,6 +128,25 @@ var bgm = {
     if (tab) await brapi.tabs.update(tab.id, {url: bgmWatchUrl(playlistId)})
   },
 
+  async next() {
+    const tab = await findBgmTab()
+    if (!tab) throw new Error("BGM のタブがありません。BGM を流してから押してください")
+    await runInBgmTab(tab.id, bgmPageNext)
+  },
+
+  //the title of the song playing now; null when the BGM isn't playing (or its tab can't be read)
+  async nowPlaying() {
+    const tab = await findBgmTab()
+    if (!tab) return null
+    try {
+      return await runInBgmTab(tab.id, bgmPageNowPlaying) || null
+    }
+    catch (err) {
+      console.debug("BGM title unavailable", err)
+      return null
+    }
+  },
+
   async showTab() {
     await updateSettings({bgmBlocked: false})
     const tab = await findBgmTab()
@@ -218,6 +237,24 @@ function bgmPagePause() {
 function bgmPageSetVolume(volume) {
   const player = document.getElementById("movie_player")
   if (player && typeof player.setVolume == "function") player.setVolume(volume)
+}
+
+function bgmPageNext() {
+  const player = document.getElementById("movie_player")
+  if (player && typeof player.nextVideo == "function") player.nextVideo()
+}
+
+//null unless playing (as bgmPageIsPlaying); the title from the player, or else from the player bar at the
+//bottom of the page. Self-contained like the others: executeScript sends only this function to the page
+function bgmPageNowPlaying() {
+  const player = document.getElementById("movie_player")
+  const state = player && typeof player.getPlayerState == "function" ? player.getPlayerState() : null
+  const video = document.querySelector("#movie_player video")
+  if (!(state == 1 || state == 3 || (video && !video.paused))) return null
+  const data = player && typeof player.getVideoData == "function" ? player.getVideoData() : null
+  const bar = document.querySelector("ytmusic-player-bar .title")
+  const title = String((data && data.title) || (bar && bar.textContent) || "").trim()
+  return title || null
 }
 
 //playing (1) or buffering (3); while an ad plays the player says "unstarted", but its video runs

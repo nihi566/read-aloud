@@ -19,7 +19,8 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 // playerState: YouTube のプレーヤーの状態（1 = 再生中、2 = 一時停止、-1 = 未開始）
 // session: ブラウザを閉じると消える保存場所（BGM のタブの番号を置く）
 // onPlayCall: ページで playVideo を呼ぶたびに呼ばれる（途中で止める操作を割り込ませる）
-function load({ settings = {}, session = {}, tabs = {}, playerState = 1, playerReady = true, permitted = true, onPlayCall } = {}) {
+// pageResults: ページで動かす関数の名前 → その戻り値（上のもの以外）
+function load({ settings = {}, session = {}, tabs = {}, playerState = 1, playerReady = true, permitted = true, onPlayCall, pageResults = {} } = {}) {
   const store = { ...settings };
   const sessionStore = { ...session };
   const tabsById = { ...tabs };
@@ -63,6 +64,7 @@ function load({ settings = {}, session = {}, tabs = {}, playerState = 1, playerR
           return [{ result: playerReady }];
         }
         if (func.name == "bgmPageIsPlaying") return [{ result: playerState == 1 }];
+        if (func.name in pageResults) return [{ result: pageResults[func.name] }];
         return [{ result: true }];
       },
     },
@@ -352,4 +354,64 @@ test("BGM のタブを前に出す", async () => {
   });
   await ctx.bgm.showTab();
   assert.deepEqual(plain(calls), [["update", 7, { active: true }], ["window", 3, { focused: true }]]);
+});
+
+const BGM_TAB = { session: { bgmTabId: 7 }, tabs: { 7: { id: 7, url: "https://music.youtube.com/watch?list=x", windowId: 1 } } };
+
+test("次の曲: BGM のタブのプレーヤーを次の曲へ進める", async () => {
+  const { ctx, calls } = load(BGM_TAB);
+  await ctx.bgm.next();
+  assert.deepEqual(plain(calls.map((c) => [c[0], c[1], c[2], c[4]])), [["script", 7, "bgmPageNext", "MAIN"]]);
+});
+
+test("次の曲: BGM のタブが無ければ、分かる言葉で失敗する", async () => {
+  const { ctx, calls } = load();
+  await assert.rejects(ctx.bgm.next(), /BGM/);
+  assert.equal(calls.length, 0);
+});
+
+test("今の曲名: 流れていれば曲名を返し、タブが無い・止まっている・読めないときは null", async () => {
+  assert.equal(await load({ ...BGM_TAB, pageResults: { bgmPageNowPlaying: "夜に駆ける" } }).ctx.bgm.nowPlaying(), "夜に駆ける");
+  assert.equal(await load({ ...BGM_TAB, pageResults: { bgmPageNowPlaying: null } }).ctx.bgm.nowPlaying(), null);
+  assert.equal(await load().ctx.bgm.nowPlaying(), null);
+  // 許可を外された・タブが閉じかけている等でスクリプトを動かせないときも、ポップアップを止めない
+  const broken = load(BGM_TAB);
+  broken.ctx.brapi.scripting.executeScript = async () => { throw new Error("Cannot access contents of the page"); };
+  assert.equal(await broken.ctx.bgm.nowPlaying(), null);
+});
+
+test("ページ側: nextVideo を呼ぶ。プレーヤーが無ければ何もしない", () => {
+  const { ctx } = load();
+  let called = 0;
+  ctx.document = { getElementById: () => ({ nextVideo: () => called++ }) };
+  ctx.bgmPageNext();
+  assert.equal(called, 1);
+  ctx.document = { getElementById: () => null };
+  ctx.bgmPageNext();
+});
+
+test("ページ側: 流れている曲の曲名を返す（無ければ再生バーの曲名、止まっていれば null）", () => {
+  const { ctx } = load();
+  const page = ({ state = 1, title, barTitle, videoPaused = null }) => {
+    ctx.document = {
+      getElementById: () => ({ getPlayerState: () => state, getVideoData: () => ({ title }) }),
+      querySelector: (sel) => {
+        if (sel == "#movie_player video") return videoPaused == null ? null : { paused: videoPaused };
+        return barTitle == null ? null : { textContent: barTitle };
+      },
+    };
+    return ctx.bgmPageNowPlaying();
+  };
+  assert.equal(page({ title: "  夜に駆ける " }), "夜に駆ける");
+  assert.equal(page({ title: "", barTitle: " アイドル " }), "アイドル");
+  assert.equal(page({ state: 2, title: "夜に駆ける", videoPaused: true }), null, "一時停止");
+  assert.equal(page({ title: "", barTitle: "" }), null);
+});
+
+test("ページで動かす関数は、ほかの関数を呼ばない（executeScript はその関数だけをページへ送る）", () => {
+  const { ctx } = load();
+  for (const name of ["bgmPagePlay", "bgmPagePause", "bgmPageSetVolume", "bgmPageIsPlaying", "bgmPageNext", "bgmPageNowPlaying"]) {
+    const body = ctx[name].toString();
+    assert.equal(body.slice(body.indexOf("{")).match(/\bbgm\w*\(/g), null, name);
+  }
 });
